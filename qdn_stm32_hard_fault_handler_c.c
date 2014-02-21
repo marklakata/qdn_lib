@@ -7,7 +7,7 @@
 #include "qdn_stm32_hard_fault_handler.h"
 #include "qdn_cpu.h"
 
-__no_init volatile G8_StackDump_t g8StackDump;
+__no_init volatile QDN_StackDump_t qdn_StackDump;
 
 void hard_fault_handler_c (unsigned int * hardfault_args);
 
@@ -48,22 +48,22 @@ void hard_fault_handler_c (unsigned int * hardfault_args) { // ISR
   printf ("AFSR = %x\n", (*((volatile unsigned long *)(0xE000ED3C))));
   printf ("SCB_SHCSR = %x\n", SCB->SHCSR);
 #else
-  g8StackDump.R0  = ((uint32_t) hardfault_args[0]);
-  g8StackDump.R1  = ((uint32_t) hardfault_args[1]);
-  g8StackDump.R2  = ((uint32_t) hardfault_args[2]);
-  g8StackDump.R3  = ((uint32_t) hardfault_args[3]);
-  g8StackDump.R12 = ((uint32_t) hardfault_args[4]);
-  g8StackDump.LR  = ((uint32_t) hardfault_args[5]);
-  g8StackDump.PC  = ((uint32_t) hardfault_args[6]);
-  g8StackDump.PSR = ((uint32_t) hardfault_args[7]);
+  qdn_StackDump.R0  = ((uint32_t) hardfault_args[0]);
+  qdn_StackDump.R1  = ((uint32_t) hardfault_args[1]);
+  qdn_StackDump.R2  = ((uint32_t) hardfault_args[2]);
+  qdn_StackDump.R3  = ((uint32_t) hardfault_args[3]);
+  qdn_StackDump.R12 = ((uint32_t) hardfault_args[4]);
+  qdn_StackDump.LR  = ((uint32_t) hardfault_args[5]);
+  qdn_StackDump.PC  = ((uint32_t) hardfault_args[6]);
+  qdn_StackDump.PSR = ((uint32_t) hardfault_args[7]);
   
-  g8StackDump.BFAR = (*((volatile unsigned long *)(0xE000ED38)));
-  g8StackDump.CFSR = (*((volatile unsigned long *)(0xE000ED28)));
-  g8StackDump.HFSR = (*((volatile unsigned long *)(0xE000ED2C)));
-  g8StackDump.DFSR = (*((volatile unsigned long *)(0xE000ED30)));
-  g8StackDump.AFSR = (*((volatile unsigned long *)(0xE000ED3C)));
-  g8StackDump.SCB_SHCSR = SCB->SHCSR;
-  g8StackDump.status = 0xDEADBEEF;
+  qdn_StackDump.BFAR = (*((volatile unsigned long *)(0xE000ED38)));
+  qdn_StackDump.CFSR = (*((volatile unsigned long *)(0xE000ED28)));
+  qdn_StackDump.HFSR = (*((volatile unsigned long *)(0xE000ED2C)));
+  qdn_StackDump.DFSR = (*((volatile unsigned long *)(0xE000ED30)));
+  qdn_StackDump.AFSR = (*((volatile unsigned long *)(0xE000ED3C)));
+  qdn_StackDump.SCB_SHCSR = SCB->SHCSR;
+  qdn_StackDump.status = 0xDEADBEEF;
   
 #endif
   

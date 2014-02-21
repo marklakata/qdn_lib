@@ -1,5 +1,5 @@
-#ifndef _G8_RTC_H_
-#define _G8_RTC_H_
+#ifndef _QDN_RTC_H_
+#define _QDN_RTC_H_
 
 #include <stdint.h>
 

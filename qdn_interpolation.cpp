@@ -12,7 +12,7 @@
 
 
 extern "C" 
-uint16_t G8_InterpolateADC(uint16_t adc, const int16_t* table, int logTableSize) {
+uint16_t QDN_InterpolateADC(uint16_t adc, const int16_t* table, int logTableSize) {
     uint16_t t;    
     uint8_t index;
     int logDelta;

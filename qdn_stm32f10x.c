@@ -30,35 +30,40 @@ void QDN_GPIO_Init(GPIO_TypeDef* GPIOx, GPIO_InitTypeDef* GPIO_InitStruct)
     GPIO_Init(GPIOx,GPIO_InitStruct);
 }
 
-void QDN_USART_Init(USART_TypeDef* USARTx, USART_InitTypeDef* USART_InitStruct)
-{
-  USART_DeInit(USARTx);
-
-  if (USARTx == USART1) {
-      RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE);
-  } else {
-      uint32_t mask;
-      if      (USARTx == USART2) mask = RCC_APB1Periph_USART2;
-      else if (USARTx == USART3) mask = RCC_APB1Periph_USART3;
-      else if (USARTx == UART4)  mask = RCC_APB1Periph_UART4;
-      else if (USARTx == UART5)  mask = RCC_APB1Periph_UART5;
-      RCC_APB1PeriphClockCmd(mask, ENABLE);
-  }
-  USART_Init(USARTx, USART_InitStruct);
-}
 
   
 
-#pragma section = ".intvec"
+#ifdef __GNUC__
+	//#pragma CODE_SECTION(QDN_VectorInit,".intvec")
+	//extern void QDN_VectorInit(void) __attribute__ ((section (".intvec")));
+#elif __IAR__
+	#pragma section = ".intvec"
+#else
+	#error "fix me"
+#endif
 
-void QDN_VectorInit(void) {
+
+void QDN_VectorInit(void)
+{
     uint32_t base;
     uint32_t offset;
     uint32_t size;
     
+#ifdef __GNUC__
+    {
+    	// these 2 symbols are defined in a custom linker (ld) file, near .isr_vector :
+    	// if not, you'll to add PROVIDE statements.
+    	extern void __isr_vector_start();
+    	extern void __isr_vector_stop();
+
+    	offset = (uint32_t)  &__isr_vector_start;
+    	size   = ((uint32_t) &__isr_vector_stop) - offset;
+    }
+#elif __IAR__
     offset = (uint32_t)__section_begin(".intvec");
     size   = __section_size(".intvec");
-    
+#endif
+
     
     if (offset >= SRAM_BASE) {
         base = SCB_VTOR_TBLBASE;
@@ -155,7 +160,7 @@ void QDN_ADC_ConfigureDMAAndMuxMany(DMA_Channel_TypeDef *dma, volatile uint16_t*
     ADC_DMACmd(adc, ENABLE);
     QDN_ADC_EnableAndCalibrate(adc);
     ADC_SoftwareStartConvCmd(adc, ENABLE);
-    va_end();
+    va_end(channelList);
 }
 
 
@@ -288,7 +293,7 @@ void QDN_RTC_StandardInit(void) {
 
 
 // returns 1 on success, 0 on failure
-uint8_t QDN_RTC_GetBinaryTimeStamp(QDN_RTC_DateTime_t* pTimestamp) {
+uint8_t QDN_RTC_GetBinaryTimeStamp(struct QDN_RTC_DateTime_s* pTimestamp) {
     uint64_t rtcCounter = QDN_RTC_GetIntegerTimeStamp();
     return QDN_TimeStampConversionInteger2Binary(rtcCounter,pTimestamp);
 }

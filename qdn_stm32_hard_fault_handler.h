@@ -1,4 +1,4 @@
-// g8_stm32_hard_fault_handler.h
+// qdn_stm32_hard_fault_handler.h
 
 #include <stdint.h>
 
@@ -18,7 +18,7 @@ typedef struct  {
     uint32_t DFSR;
     uint32_t AFSR;
     uint32_t SCB_SHCSR;
-}  G8_StackDump_t;
+}  QDN_StackDump_t;
 
-extern volatile G8_StackDump_t g8StackDump;
+extern volatile QDN_StackDump_t qdn_StackDump;
 

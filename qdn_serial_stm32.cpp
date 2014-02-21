@@ -19,7 +19,7 @@
 
 // if a USART is not used, set the port,pin pair to 0,0
 ComPortHandle_t ports[] = {
-#include "g8_serial_port_config.c"
+#include "qdn_serial_port_config.c"
     {0,     0,0} // leave this line
 };
 ComPortHandle_t* UART1_Port = NULL;
@@ -29,14 +29,14 @@ ComPortHandle_t* UART4_Port = NULL;
 ComPortHandle_t* UART5_Port = NULL;
 ComPortHandle_t* UART6_Port = NULL;
 
-ComPortHandle_t* G8_SerialPortInit( USART_TypeDef* uart, uint32_t ulWantedBaud, uint32_t uxQueueLength )
+ComPortHandle_t* QDN_SerialPortInit( USART_TypeDef* uart, uint32_t ulWantedBaud, uint32_t uxQueueLength )
 {
-    ComPortHandle_t* port = G8_SerialPortInitEx(uart,ulWantedBaud,uxQueueLength);
-    G8_SerialPortEnable(port);
+    ComPortHandle_t* port = QDN_SerialPortInitEx(uart,ulWantedBaud,uxQueueLength);
+    QDN_SerialPortEnable(port);
     return port;
 }
 
-ComPortHandle_t* G8_SerialPortInitEx( USART_TypeDef* uart, uint32_t ulWantedBaud, uint32_t uxQueueLength )
+ComPortHandle_t* QDN_SerialPortInitEx( USART_TypeDef* uart, uint32_t ulWantedBaud, uint32_t uxQueueLength )
 {
     ComPortHandle_t* port;
     NVIC_InitTypeDef NVIC_InitStructure;
@@ -75,28 +75,28 @@ ComPortHandle_t* G8_SerialPortInitEx( USART_TypeDef* uart, uint32_t ulWantedBaud
         port->lowWater  = (uxQueueLength * 1)/8;
         port->highWater = (uxQueueLength * 7)/8;
 #else   
-        if (port->rtsPort !=0 ){
+        if (port->rtsPin !=0 ){
     		USART_InitStructure.USART_HardwareFlowControl |= USART_HardwareFlowControl_RTS;
         }
 #endif
-        if (port->ctsPort !=0 ){
+        if (port->ctsPin !=0 ){
     		USART_InitStructure.USART_HardwareFlowControl |= USART_HardwareFlowControl_CTS;
         }
         
 		USART_InitStructure.USART_Mode = 0;
-        if (port->txPort != 0) {
+        if (port->txPin != 0) {
             USART_InitStructure.USART_Mode |= USART_Mode_Tx;
         }
-        if (port->rxPort != 0) {
+        if (port->rxPin != 0) {
             USART_InitStructure.USART_Mode |= USART_Mode_Rx;
         }
-        port->helper = G8_USART_Init(port->uart,  &USART_InitStructure);
+        port->helper = QDN_USART_Init(port->uart,  &USART_InitStructure);
 
 		NVIC_InitStructure.NVIC_IRQChannel = port->helper.irqn;
 		NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = port->interruptPriority;
 		NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0; /* Not used as 4 bits are used for the pre-emption priority. */;
 		NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-		G8_NVIC_Init( &NVIC_InitStructure );
+		QDN_NVIC_Init( &NVIC_InitStructure );
 	}
 	else
 	{
@@ -107,65 +107,109 @@ ComPortHandle_t* G8_SerialPortInitEx( USART_TypeDef* uart, uint32_t ulWantedBaud
 }
 /*-----------------------------------------------------------*/
 
-void G8_SerialPortEnable( ComPortHandle_t* port ) {
-    if (port->txPort != 0) {
-        GPIO_InitTypeDef GPIO_InitStructure;
-        GPIO_StructInit(&GPIO_InitStructure);
+
+USART_Helper_t QDN_USART_Init(USART_TypeDef* USARTx, USART_InitTypeDef* USART_InitStruct)
+{
+    USART_DeInit(USARTx);
+    uint32_t mask;
+    uint32_t bus;
+    USART_Helper_t helper;
+
+    switch((uint32_t)USARTx) {
+#ifdef STM32F10X_XL
+    case USART1_BASE: mask = RCC_APB2Periph_USART1; bus = 2; helper.irqn = USART1_IRQn; break;
+    case USART2_BASE: mask = RCC_APB1Periph_USART2; bus = 1; helper.irqn = USART2_IRQn; break;
+    case USART3_BASE: mask = RCC_APB1Periph_USART3; bus = 1; helper.irqn = USART3_IRQn; break;
+    case UART4_BASE:  mask = RCC_APB1Periph_UART4;  bus = 1; helper.irqn = UART4_IRQn ; break;
+    case UART5_BASE:  mask = RCC_APB1Periph_UART5;  bus = 1; helper.irqn = UART5_IRQn ; break;
+#else
+    case USART1_BASE: mask = RCC_APB2Periph_USART1; bus = 2; helper.irqn = USART1_IRQn; helper.altFunc = GPIO_AF_USART1; break;
+    case USART2_BASE: mask = RCC_APB1Periph_USART2; bus = 1; helper.irqn = USART2_IRQn; helper.altFunc = GPIO_AF_USART2; break;
+    case USART3_BASE: mask = RCC_APB1Periph_USART3; bus = 1; helper.irqn = USART3_IRQn; helper.altFunc = GPIO_AF_USART3; break;
+    case UART4_BASE:  mask = RCC_APB1Periph_UART4;  bus = 1; helper.irqn = UART4_IRQn ; helper.altFunc = GPIO_AF_UART4; break;
+    case UART5_BASE:  mask = RCC_APB1Periph_UART5;  bus = 1; helper.irqn = UART5_IRQn ; helper.altFunc = GPIO_AF_UART5; break;
+    case USART6_BASE: mask = RCC_APB2Periph_USART6; bus = 2; helper.irqn = USART6_IRQn; helper.altFunc = GPIO_AF_USART6; break;
+#endif
+    default: bus = 0; break;
+    }
+
+    if (bus == 1) {
+      RCC_APB1PeriphClockCmd(mask, ENABLE);
+    } else if (bus == 2) {
+      RCC_APB2PeriphClockCmd(mask, ENABLE);
+    }
+
+    USART_Init(USARTx, USART_InitStruct);
+    return helper;
+}
+
+
+
+void QDN_SerialPortEnable( ComPortHandle_t* port ) {
+    if (port->txPin != 0) {
+#ifdef STM32F10X_XL
+    	port->txPin->mode = GPIO_Mode_AF_PP;
+#else
+#error
         GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
         GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_UP;
         GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_AF;
-        GPIO_InitStructure.GPIO_Pin   = (1<<port->txPin_);
-        GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
-        G8_GPIO_Init(port->txPort, &GPIO_InitStructure);
-        GPIO_PinAFConfig(port->txPort, port->txPin_, port->helper.altFunc);
+        port->txPin->SetAF(GPIO_PinAFConfig(port->txPort, port->txPin_, port->helper.altFunc);
+#endif
+    	port->txPin->Init();
     }
     
-    if (port->rxPort !=0 ){
-        GPIO_InitTypeDef GPIO_InitStructure;
-        GPIO_StructInit(&GPIO_InitStructure);
-
+    if (port->rxPin !=0 ){
+#ifdef STM32F10X_XL
+    	port->rxPin->mode = GPIO_Mode_IPU;
+#else
+#error
         GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
-        GPIO_InitStructure.GPIO_Pin = (1<<port->rxPin_);
-        GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
-        G8_GPIO_Init(port->rxPort, &GPIO_InitStructure);
-        GPIO_PinAFConfig(port->rxPort, port->rxPin_, port->helper.altFunc);
+        port->rxPin->SetAF(port->helper.altFunc);
+#endif
+        port->rxPin->Init();
     }
 
-    if (port->rtsPort !=0 ){
-        GPIO_InitTypeDef GPIO_InitStructure;
-        GPIO_StructInit(&GPIO_InitStructure);
+    if (port->rtsPin !=0 ){
+#ifdef STM32F10X_XL
+    	port->rtsPin->mode = SOFTWARE_RTS ? GPIO_Mode_Out_PP : GPIO_Mode_AF_PP;
+#else
+#error
         GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
         GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_UP;
         GPIO_InitStructure.GPIO_Pin   = (1<<port->rtsPin_);
         GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
 #if SOFTWARE_RTS == 0
         GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_AF;
-        G8_GPIO_Init(port->rtsPort, &GPIO_InitStructure);
-        GPIO_PinAFConfig(port->rtsPort, port->rtsPin_, port->helper.altFunc);
+        port->rtsPin->SetAF(port->helper.altFunc);
 #else
         GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_OUT;
-        G8_GPIO_Init(port->rtsPort, &GPIO_InitStructure);
 #endif
+#endif
+        port->rtsPin->Init();
+
     }
 
-    if (port->ctsPort !=0 ){
-        GPIO_InitTypeDef GPIO_InitStructure;
-        GPIO_StructInit(&GPIO_InitStructure);
-        GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
-        GPIO_InitStructure.GPIO_Pin = (1<<port->ctsPin_);
-        GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
-        G8_GPIO_Init(port->ctsPort, &GPIO_InitStructure);
-        GPIO_PinAFConfig(port->ctsPort, port->ctsPin_, port->helper.altFunc);
+    if (port->ctsPin !=0 ){
+    	port->ctsPin->mode = GPIO_Mode_IN_FLOATING;
+//        GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+ //       GPIO_InitStructure.GPIO_Pin = (1<<port->ctsPin_);
+ //       GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
+ //       QDN_GPIO_Init(port->ctsPort, &GPIO_InitStructure);
+ //       GPIO_PinAFConfig(port->ctsPort, port->ctsPin_, port->helper.altFunc);
+    	port->ctsPin->Init();
     }
     
     // install interrupt helpers
-    switch((int)port->uart) {
-    case (int)USART1: UART1_Port = port; break;
-    case (int)USART2: UART2_Port = port; break;
-    case (int)USART3: UART3_Port = port; break;
-    case (int)UART4:  UART4_Port = port; break;
-    case (int)UART5:  UART5_Port = port; break;
-    case (int)USART6: UART6_Port = port; break;
+    switch((int)(port->uart)) {
+    case USART1_BASE: UART1_Port = port; break;
+    case USART2_BASE: UART2_Port = port; break;
+    case USART3_BASE: UART3_Port = port; break;
+    case UART4_BASE:  UART4_Port = port; break;
+    case UART5_BASE:  UART5_Port = port; break;
+#ifndef STM32F10X_XL
+    case USART6_BASE: UART6_Port = port; break;
+#endif
     }
     
     USART_Cmd(port->uart, ENABLE);
@@ -173,7 +217,7 @@ void G8_SerialPortEnable( ComPortHandle_t* port ) {
     USART_ITConfig( port->uart, USART_IT_RXNE, ENABLE );
 }
 
-int32_t G8_SerialGetChar( ComPortHandle_t* pxPort, uint8_t* pcRxedChar, int32_t xBlockTime )
+int32_t QDN_SerialGetChar( ComPortHandle_t* pxPort, uint8_t* pcRxedChar, int32_t xBlockTime )
 {
 	/* Get the next character from the buffer.  Return false if no characters
 	are available, or arrive before xBlockTime expires. */
@@ -184,10 +228,11 @@ int32_t G8_SerialGetChar( ComPortHandle_t* pxPort, uint8_t* pcRxedChar, int32_t 
 	else
 	{
 #if SOFTWARE_RTS == 1
-        if(pxPort->rtsPort != NULL) {
+        if(pxPort->rtsPin != NULL) {
             if (uxQueueMessagesWaiting(pxPort->rxQueue) <  pxPort->lowWater) {
             // The user space code only cleans this bit. The ISR sets it.
-                pxPort->rtsPort->BSRRH = (1<<pxPort->rtsPin_);
+//                pxPort->rtsPort->BSRRH = (1<<pxPort->rtsPin_);
+            	pxPort->rtsPin->Deassert();
             }
         }
 #endif
@@ -196,22 +241,22 @@ int32_t G8_SerialGetChar( ComPortHandle_t* pxPort, uint8_t* pcRxedChar, int32_t 
 }
 /*-----------------------------------------------------------*/
 
-void G8_SerialPutString( ComPortHandle_t* pxPort, const uint8_t * const pcString )
+void QDN_SerialPutString( ComPortHandle_t* pxPort, const uint8_t * const pcString )
 {
     const uint8_t *pxNext = pcString;
 	while( *pxNext )
 	{
-		G8_SerialPutChar( pxPort, *pxNext );
+		QDN_SerialPutChar( pxPort, *pxNext );
 		pxNext++;
 	}
 }
 
-uint32_t G8_SerialWriteBuffer( ComPortHandle_t* pxPort, const uint8_t * const buffer, uint16_t usStringLength )
+uint32_t QDN_SerialWriteBuffer( ComPortHandle_t* pxPort, const uint8_t * const buffer, uint16_t usStringLength )
 {
     uint32_t sent = 0;
 	for(int i=0;i<usStringLength;i++)
 	{
-		if (G8_SerialPutChar( pxPort, buffer[i]) >=0) {
+		if (QDN_SerialPutChar( pxPort, buffer[i]) >=0) {
             sent ++;
         }
 	}
@@ -220,10 +265,10 @@ uint32_t G8_SerialWriteBuffer( ComPortHandle_t* pxPort, const uint8_t * const bu
 
 /*-----------------------------------------------------------*/
 
-int32_t G8_SerialPutChar( ComPortHandle_t* pxPort, uint8_t cOutChar )
+int32_t QDN_SerialPutChar( ComPortHandle_t* pxPort, uint8_t cOutChar )
 {
 #ifdef BARE_TX_QUEUE
-    int next = pxPort->txQueue.wptr + 1;
+    uint32_t next = pxPort->txQueue.wptr + 1;
     if (next >=  sizeof(pxPort->txQueue.buffer)) {
         next = 0;
     }
@@ -256,49 +301,29 @@ int32_t G8_SerialPutChar( ComPortHandle_t* pxPort, uint8_t cOutChar )
 }
 /*-----------------------------------------------------------*/
 
-void G8_SerialClose(  ComPortHandle_t* port )
+void QDN_SerialClose(  ComPortHandle_t* port )
 {
 	if (port != NULL) {
 		USART_ITConfig( port->uart, USART_IT_TXE, DISABLE );
         USART_ITConfig( port->uart, USART_IT_RXNE, DISABLE );
         USART_Cmd(port->uart, DISABLE);
 
-        GPIO_InitTypeDef GPIO_InitStructure;
-        GPIO_StructInit(&GPIO_InitStructure);
-        GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_NOPULL;
-        GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_IN;
-        GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
 
-        if (port->txPort != 0) {
-            GPIO_InitStructure.GPIO_Pin   = (1<<port->txPin_);
-            G8_GPIO_Init(port->txPort, &GPIO_InitStructure);
-        }
-        
-        if (port->rxPort !=0 ){
-            GPIO_InitStructure.GPIO_Pin = (1<<port->rxPin_);
-            G8_GPIO_Init(port->rxPort, &GPIO_InitStructure);
-        }
-
-        if (port->rtsPort !=0 ){
-            GPIO_InitStructure.GPIO_Pin   = (1<<port->rtsPin_);
-            G8_GPIO_Init(port->rtsPort, &GPIO_InitStructure);
-        }
-
-        if (port->ctsPort !=0 ){
-            GPIO_InitStructure.GPIO_Pin = (1<<port->ctsPin_);
-            G8_GPIO_Init(port->ctsPort, &GPIO_InitStructure);
-        }
-       
-    
+        if (port->txPin  != 0) port->txPin->HiZ();
+        if (port->rxPin  != 0) port->rxPin->HiZ();
+        if (port->rtsPin != 0) port->rtsPin->HiZ();
+        if (port->ctsPin != 0) port->ctsPin->HiZ();
     
         // uninstall interrupt helpers
         switch((int)port->uart) {
-        case (int)USART1: UART1_Port = NULL; break;
-        case (int)USART2: UART2_Port = NULL; break;
-        case (int)USART3: UART3_Port = NULL; break;
-        case (int)UART4:  UART4_Port = NULL; break;
-        case (int)UART5:  UART5_Port = NULL; break;
-        case (int)USART6: UART6_Port = NULL; break;
+        case USART1_BASE: UART1_Port = NULL; break;
+        case USART2_BASE: UART2_Port = NULL; break;
+        case USART3_BASE: UART3_Port = NULL; break;
+        case UART4_BASE:  UART4_Port = NULL; break;
+        case UART5_BASE:  UART5_Port = NULL; break;
+#ifndef STM32F10X_XL
+        case USART6_BASE: UART6_Port = NULL; break;
+#endif
         }
     }
 }
@@ -319,7 +344,7 @@ static void USARTx_IRQHandler(ComPortHandle_t* port)
     if (port->uart->SR & USART_FLAG_TXE) {
         if (port->txQueue.wptr != port->txQueue.rptr) {
             port->uart->DR = port->txQueue.buffer[port->txQueue.rptr];
-            int next = port->txQueue.rptr + 1;
+            uint32_t next = port->txQueue.rptr + 1;
             if (next >=  sizeof(port->txQueue.buffer)) {
                 next = 0;
             }
@@ -350,10 +375,11 @@ static void USARTx_IRQHandler(ComPortHandle_t* port)
 		XOS_FixedQueueSendFromISREx( port->rxQueue, &cChar, &xHigherPriorityTaskWoken );
         
 #if SOFTWARE_RTS == 1
-        if(port->rtsPort != NULL) {
+        if(port->rtsPin != NULL) {
             if(uxQueueMessagesWaitingFromISR(port->rxQueue) >  port->highWater ) {
                 // the ISR only sets this bit. The user space code has to clear it.
-                port->rtsPort->BSRRL = (1<<port->rtsPin_);
+                //port->rtsPort->BSRRL = (1<<port->rtsPin_);
+            	port->rtsPin->Assert();
             }
         }
 #endif
@@ -408,11 +434,11 @@ void USART6_IRQHandler( void )
 }
 
 
-#include "project.h"
+#include "qdn_project.h"
 
 #ifdef DEBUG_UART
 // this assumes that the debug UART is ready for data
-void G8_SerialDebugWrite(const char* data) {
+void QDN_SerialDebugWrite(const char* data) {
     __disable_interrupt();
     int len = strlen(data);
     for(int i=0;i<len;i++) {

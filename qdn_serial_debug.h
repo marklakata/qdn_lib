@@ -1,5 +1,5 @@
-#ifndef _G8_SERIAL_DEBUG_H_
-#define _G8_SERIAL_DEBUG_H_
+#ifndef _QDN_SERIAL_DEBUG_H_
+#define _QDN_SERIAL_DEBUG_H_
 
 #define ANSI_NORMAL  "\033[0m"
 #define ANSI_BLACK   "\033[30m"

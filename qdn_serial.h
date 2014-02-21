@@ -1,5 +1,5 @@
-#ifndef _G8_SERIAL_COMMS_H
-#define _G8_SERIAL_COMMS_H
+#ifndef _QDN_SERIAL_COMMS_H
+#define _QDN_SERIAL_COMMS_H
 
 #include "qdn_xos.h"
 #include "qdn_cpu.h"
@@ -13,7 +13,7 @@
 #include "qdn_stm32f4xx.h"
 #endif
 #include <stdint.h>
-
+#include "qdn_gpio.h"
 #include "qdn_project.h"
 
 #define BARE_TX_QUEUE
@@ -21,8 +21,8 @@
 #ifdef BARE_TX_QUEUE
 typedef struct {
     volatile uint8_t buffer[128];
-    volatile int wptr;
-    volatile int rptr;
+    volatile uint32_t wptr;
+    volatile uint32_t rptr;
     int overflows;
 } BareQueue_t;
 #endif
@@ -30,15 +30,18 @@ typedef struct {
 #define  SOFTWARE_RTS  1
 
 typedef struct {
+    IRQn_Type      irqn;
+    uint8_t        altFunc;
+} USART_Helper_t;
+
+typedef struct {
     USART_TypeDef* uart;
-    GPIO_TypeDef* txPort;
-    uint16_t      txPin_;
-    GPIO_TypeDef* rxPort;
-    uint16_t      rxPin_;
-    GPIO_TypeDef* rtsPort;
-    uint16_t      rtsPin_;
-    GPIO_TypeDef* ctsPort;
-    uint16_t      ctsPin_;
+
+    QDN_Pin*     txPin;
+    QDN_Pin*     rxPin;
+    QDN_Pin*     rtsPin;
+    QDN_Pin*     ctsPin;
+
     int32_t       interruptPriority;
     USART_Helper_t helper;
     /* The queue used to hold received characters. */
@@ -56,19 +59,22 @@ typedef struct {
 
 
 QDN_EXTERN_C
-ComPortHandle_t*     G8_SerialPortInit        ( USART_TypeDef* uart,  uint32_t ulWantedBaud, uint32_t uxQueueLength ); // configure and enable
-ComPortHandle_t*     G8_SerialPortInitEx      ( USART_TypeDef* uart,  uint32_t ulWantedBaud, uint32_t uxQueueLength ); // configure but don't enable
-void                 G8_SerialPortEnable      ( ComPortHandle_t* pxPort );
-void                 G8_SerialPutString       ( ComPortHandle_t* pxPort, const uint8_t * const pcString );
-uint32_t             G8_SerialWriteBuffer     ( ComPortHandle_t* pxPort, const uint8_t * const buffer, uint16_t usStringLength );
-int32_t              G8_SerialGetChar         ( ComPortHandle_t* pxPort, uint8_t* pcRxedChar, int32_t xBlockTime );
-int32_t              G8_SerialPutChar         ( ComPortHandle_t* pxPort, uint8_t  cOutChar );
-int32_t              G8_SerialWaitForSemaphore( ComPortHandle_t* xPort );
-void                 G8_SerialClose           ( ComPortHandle_t* xPort );
+USART_Helper_t       QDN_USART_Init(USART_TypeDef* USARTx, USART_InitTypeDef* USART_InitStruct);
+
+
+ComPortHandle_t*     QDN_SerialPortInit        ( USART_TypeDef* uart,  uint32_t ulWantedBaud, uint32_t uxQueueLength ); // configure and enable
+ComPortHandle_t*     QDN_SerialPortInitEx      ( USART_TypeDef* uart,  uint32_t ulWantedBaud, uint32_t uxQueueLength ); // configure but don't enable
+void                 QDN_SerialPortEnable      ( ComPortHandle_t* pxPort );
+void                 QDN_SerialPutString       ( ComPortHandle_t* pxPort, const uint8_t * const pcString );
+uint32_t             QDN_SerialWriteBuffer     ( ComPortHandle_t* pxPort, const uint8_t * const buffer, uint16_t usStringLength );
+int32_t              QDN_SerialGetChar         ( ComPortHandle_t* pxPort, uint8_t* pcRxedChar, int32_t xBlockTime );
+int32_t              QDN_SerialPutChar         ( ComPortHandle_t* pxPort, uint8_t  cOutChar );
+int32_t              QDN_SerialWaitForSemaphore( ComPortHandle_t* xPort );
+void                 QDN_SerialClose           ( ComPortHandle_t* xPort );
 #ifdef DEBUG_UART
-void                 G8_SerialDebugWrite      (const char* data);
+void                 QDN_SerialDebugWrite      (const char* data);
 #else
-#define              G8_SerialDebugWrite(x)
+#define              QDN_SerialDebugWrite(x)
 #endif
 
 QDN_END_EXTERN_C
