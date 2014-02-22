@@ -37,21 +37,25 @@ extern "C" {
 typedef void (*Callback_t)(void);
 
 /// Call this function first on application initialization.
-void ParamInit(void);
+void    QDN_ParamInit(void);
 
-void SetParamDefault(uint16_t index, int32_t value, Callback_t cb);
-void SetParameterRaw(uint16_t index, int32_t value);
-void SetParameterWithCallback(uint16_t index, int32_t value);
-int32_t Parameter(uint16_t index);
-uint8_t ParameterStatus(uint16_t index);
-void ParamEraseAll(void);
-void ParameterMemoryCopy(uint8_t* buffer, uint16_t start, uint16_t end);
-void ParamErase(uint16_t index);
+void    QDN_ParamSetDefault(uint16_t index, int32_t value, Callback_t cb);
+void    QDN_ParamSetRaw(uint16_t index, int32_t value);
+void    QDN_ParamSetFloatRaw(uint16_t index, float value);
+void    QDN_ParamSetString(uint16_t index, uint16_t lastIndex, char* buffer, int32_t length);
+void    QDN_ParamSetWithCallback(uint16_t index, int32_t value);
+int32_t QDN_ParamInt32(uint16_t index);
+float   QDN_ParamFloat(uint16_t index);
+int     QDN_ParamString(uint16_t index, char* buffer, int32_t maxChars);
+uint8_t QDN_ParamStatus(uint16_t index);
+void    QDN_ParamEraseAll(void);
+void    QDN_ParamMemoryCopy(uint8_t* buffer, uint16_t start, uint16_t end);
+void    QDN_ParamErase(uint16_t index);
  
 #ifdef __cplusplus
 }
 #endif
 
 #ifdef __cplusplus
-const int32_t& ParameterRef(uint16_t index);
+const int32_t& QDN_ParamRef(uint16_t index);
 #endif

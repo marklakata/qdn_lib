@@ -337,7 +337,7 @@ public:
         for(ipage =0; ipage<NUM_PARAM_PAGES;ipage++) {
             FlashErasePage((ipage * FLASH_PAGE_SIZE)+PARAM_START,FLASH_PASSWORD);
         }
-        ParamInit();
+        QDN_ParamInit();
     }
 
 private:
@@ -536,46 +536,82 @@ int32_t ParameterDatabase::zero = 0;
 static ParameterDatabase paramDb;
 
 // public interface functions
-extern "C"  void SetParameterRaw(uint16_t index, int32_t value) {
+extern "C"  void QDN_ParamSetRaw(uint16_t index, int32_t value) {
     paramDb.SetParameterRaw(index,value);
 }
 
-extern "C"  void SetParameterWithCallback(uint16_t index, int32_t value) {
+extern "C"  void QDN_ParamSetFloatRaw(uint16_t index, float value) {
+	int32_t ivalue = *(int32_t*)&value;
+    paramDb.SetParameterRaw(index,ivalue);
+}
+
+extern "C"  void  QDN_ParamSetString(uint16_t index, uint16_t lastIndex, char* buffer, int32_t length)
+{
+	for(int index=index;index<=lastIndex;index++)
+	{
+		int32_t ivalue = 0;
+		if (length >0)
+		{
+			memcpy(&ivalue,buffer,4);
+			length-= 4;
+			buffer += 4;
+		}
+		paramDb.SetParameterRaw(index,ivalue);
+	}
+}
+
+
+extern "C"  void QDN_ParamSetWithCallback(uint16_t index, int32_t value) {
     paramDb.SetParameterWithCallback(index,value);
 }
 
-extern "C"  void ParamErase(uint16_t index) {
+extern "C"  void QDN_ParamErase(uint16_t index) {
     paramDb.ParamErase(index);
 }
 
 // public interface functions
-extern "C"  void SetParamDefault(uint16_t index, int32_t value, Callback_t callback) {
+extern "C"  void QDN_ParamSetDefault(uint16_t index, int32_t value, Callback_t callback) {
     paramDb.SetParamDefault(index,value,callback);
 }
 
-extern "C" int32_t Parameter(uint16_t index) {
+extern "C" int32_t QDN_ParamInt32(uint16_t index) {
     return paramDb.ReadParameter(index);
 }
 
-const int32_t& ParameterRef(uint16_t index) {
+extern "C" float QDN_ParamFloat(uint16_t index) {
+    int32_t v= paramDb.ReadParameter(index);
+    return *(float*)&v;
+}
+
+extern "C" int QDN_ParamString(uint16_t index, char* buffer, int32_t maxChars) {
+    char* ptr = (char*) &parameter[index];
+    strncpy(buffer,ptr,maxChars);
+    if (buffer[maxChars-1]) {
+    	buffer[maxChars-1] = 0;
+    	return 1; // overflow, but still salvageable...
+    }
+    return 0;
+}
+
+const int32_t& QDN_ParamRef(uint16_t index) {
     return paramDb.ReadParameter(index);
 }
 
-extern "C" uint8_t ParameterStatus(uint16_t index) {
+extern "C" uint8_t QDN_ParamStatus(uint16_t index) {
     return paramDb.ReadParameterStatus(index);
 }
 
 
-extern "C" void ParamInit(void){
+extern "C" void QDN_ParamInit(void){
     paramDb.Init();
 }
 
-extern "C" void ParamEraseAll(void) 
+extern "C" void QDN_ParamEraseAll(void)
 {
     paramDb.EraseAll();
 }
 
-extern "C" void ParameterMemoryCopy(uint8_t* buffer, uint16_t start, uint16_t end) {
+extern "C" void QDN_ParamMemoryCopy(uint8_t* buffer, uint16_t start, uint16_t end) {
     memset(buffer,0,end-start);
     if (start >= sizeof(parameter)) {
        return;

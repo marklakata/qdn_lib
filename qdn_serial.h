@@ -16,11 +16,18 @@
 #include "qdn_gpio.h"
 #include "qdn_project.h"
 
+#ifndef USE_RTOS
 #define BARE_TX_QUEUE
+#define BARE_RX_QUEUE
+#endif
 
-#ifdef BARE_TX_QUEUE
+#if defined(BARE_TX_QUEUE) || defined(BARE_RX_QUEUE)
+#ifndef BARE_QUEUE_SIZE
+#define BARE_QUEUE_SIZE 128
+#endif
+
 typedef struct {
-    volatile uint8_t buffer[128];
+    volatile uint8_t buffer[BARE_QUEUE_SIZE];
     volatile uint32_t wptr;
     volatile uint32_t rptr;
     int overflows;
@@ -37,15 +44,19 @@ typedef struct {
 typedef struct {
     USART_TypeDef* uart;
 
-    QDN_Pin*     txPin;
-    QDN_Pin*     rxPin;
-    QDN_Pin*     rtsPin;
-    QDN_Pin*     ctsPin;
+    QDN_OutputPin*     txPin;
+    QDN_InputPin*      rxPin;
+    QDN_OutputPin*     rtsPin;
+    QDN_InputPin*      ctsPin;
 
     int32_t       interruptPriority;
     USART_Helper_t helper;
     /* The queue used to hold received characters. */
+#ifdef BARE_RX_QUEUE
+    BareQueue_t rxQueue;
+#else
     XOS_FixedQueue_t rxQueue;
+#endif
 #if SOFTWARE_RTS == 1
     uint16_t lowWater;
     uint16_t highWater;

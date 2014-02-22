@@ -13,6 +13,7 @@
 #include "stm32f4xx_usart.h"
 #include "qdn_stm32f4xx.h"
 #endif
+#include "qdn_stm32fxxx.h"
 #include "qdn_serial.h"
 #include <string.h>
 /*-----------------------------------------------------------*/
@@ -51,7 +52,16 @@ ComPortHandle_t* QDN_SerialPortInitEx( USART_TypeDef* uart, uint32_t ulWantedBau
     }
 
 
+#ifdef BARE_RX_QUEUE
+    memset(&port->rxQueue,0,sizeof(port->rxQueue));
+#else
     XOS_FixedQueueCreate(port->rxQueue ,uxQueueLength, sizeof(uint8_t));
+	if( ( port->rxQueue = 0 ) )
+	{
+        while(1);
+    }
+#endif
+
 #ifdef BARE_TX_QUEUE
     memset(&port->txQueue,0,sizeof(port->txQueue));
 #else
@@ -61,7 +71,6 @@ ComPortHandle_t* QDN_SerialPortInitEx( USART_TypeDef* uart, uint32_t ulWantedBau
     }
 #endif
 	
-	if( ( port->rxQueue != 0 ) )
 	{
         USART_InitTypeDef USART_InitStructure;
 
@@ -98,10 +107,7 @@ ComPortHandle_t* QDN_SerialPortInitEx( USART_TypeDef* uart, uint32_t ulWantedBau
 		NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 		QDN_NVIC_Init( &NVIC_InitStructure );
 	}
-	else
-	{
-        while(1);
-	}
+
 
 	return port;
 }
@@ -221,6 +227,38 @@ int32_t QDN_SerialGetChar( ComPortHandle_t* pxPort, uint8_t* pcRxedChar, int32_t
 {
 	/* Get the next character from the buffer.  Return false if no characters
 	are available, or arrive before xBlockTime expires. */
+#ifdef BARE_RX_QUEUE
+	uint32_t t0 = XOS_GetTime32();
+	while( XOS_MillisecondElapsedU32(t0) < (uint32_t)xBlockTime)
+	{
+		volatile uint32_t nextPtr = pxPort->rxQueue.rptr;
+		nextPtr++;
+		if (nextPtr >= sizeof(pxPort->rxQueue.buffer)) nextPtr = 0;
+
+		if (pxPort->rxQueue.wptr != pxPort->rxQueue.rptr) {
+			int32_t c = pxPort->rxQueue.buffer[pxPort->rxQueue.rptr];
+			pxPort->rxQueue.rptr = nextPtr;
+
+#if SOFTWARE_RTS == 1
+			if(pxPort->rtsPin != NULL) {
+				// Handle hardware flow control here. If we've emptied the queue enough to drop
+				// below the low water mark, we deassert RTS and let the peer resume transmission
+				int32_t bytesPending = pxPort->rxQueue.wptr - pxPort->rxQueue.rptr;
+				if (bytesPending <=0) bytesPending += sizeof(pxPort->rxQueue.buffer);
+				if (bytesPending <  pxPort->lowWater) {
+				// The user space code only cleans this bit. The ISR sets it.
+	//                pxPort->rtsPort->BSRRH = (1<<pxPort->rtsPin_);
+					pxPort->rtsPin->Deassert();
+				}
+			}
+#endif
+
+			return c;
+		}
+	}
+	return -1;
+
+#else
 	if( XOS_FixedQueueReceiveTimed( pxPort->rxQueue, pcRxedChar, xBlockTime )  == XOS_TIMEOUT_RESULT)
 	{
 		return -1;
@@ -238,6 +276,7 @@ int32_t QDN_SerialGetChar( ComPortHandle_t* pxPort, uint8_t* pcRxedChar, int32_t
 #endif
 		return *pcRxedChar;
 	}
+#endif
 }
 /*-----------------------------------------------------------*/
 
@@ -336,7 +375,9 @@ static void USARTx_IRQHandler(ComPortHandle_t* port)
         portFailure++;
         return;
     }
+#ifdef FREERTOS
     signed long xHigherPriorityTaskWoken = 0; // only used by FREERTOS
+#endif
 
     uint8_t cChar;
 
@@ -369,6 +410,31 @@ static void USARTx_IRQHandler(ComPortHandle_t* port)
 	}
 #endif
 	
+#ifdef BARE_RX_QUEUE
+    if (port->uart->SR & USART_FLAG_RXNE) {
+		cChar = port->uart->DR;
+        uint32_t next = port->rxQueue.wptr + 1;
+        if (next >=  sizeof(port->rxQueue.buffer)) {
+            next = 0;
+        }
+        if (next != port->rxQueue.rptr) {
+            port->rxQueue.buffer[port->txQueue.wptr] = cChar;
+            port->rxQueue.wptr = next;
+        }
+#if SOFTWARE_RTS == 1
+        if(port->rtsPin != NULL) {
+			int32_t bytesPending = port->rxQueue.wptr - port->rxQueue.rptr;
+			if (bytesPending <=0) bytesPending += sizeof(port->rxQueue.buffer);
+
+            if(bytesPending >  port->highWater ) {
+                // the ISR only sets this bit. The user space code has to clear it.
+                //port->rtsPort->BSRRL = (1<<port->rtsPin_);
+            	port->rtsPin->Assert();
+            }
+        }
+#endif
+    }
+#else
     if (port->uart->SR & USART_FLAG_RXNE)
 	{
 		cChar = port->uart->DR;
@@ -383,8 +449,8 @@ static void USARTx_IRQHandler(ComPortHandle_t* port)
             }
         }
 #endif
-            
 	}	
+#endif
 
 #ifdef FREERTOS
 	/* If sending or receiving from a queue has caused a task to unblock, and

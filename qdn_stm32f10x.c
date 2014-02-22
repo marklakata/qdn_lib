@@ -54,10 +54,10 @@ void QDN_VectorInit(void)
     	// these 2 symbols are defined in a custom linker (ld) file, near .isr_vector :
     	// if not, you'll to add PROVIDE statements.
     	extern void __isr_vector_start();
-    	extern void __isr_vector_stop();
+    	extern void __isr_vector_end();
 
     	offset = (uint32_t)  &__isr_vector_start;
-    	size   = ((uint32_t) &__isr_vector_stop) - offset;
+    	size   = ((uint32_t) &__isr_vector_end) - offset;
     }
 #elif __IAR__
     offset = (uint32_t)__section_begin(".intvec");

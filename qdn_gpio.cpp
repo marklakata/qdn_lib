@@ -34,9 +34,9 @@ void     QDN_Pin::Init() {
 
 QDN_GPIO_Output:: QDN_GPIO_Output(GPIO_TypeDef* gpio0, int pin0)
 #ifdef STM32F10X_XL
-	: QDN_Pin(gpio0,pin0,GPIO_Mode_Out_PP)
+	: QDN_OutputPin(gpio0,pin0,GPIO_Mode_Out_PP,gpio0->BSRR,gpio0->BRR)
 #else
-	: QDN_Pin(gpio0,pin0,GPIO_OType_PP)
+	: QDN_OutputPin(gpio0,pin0,GPIO_OType_PP,gpio0->BSRRL,gpio0->BSRRH)
 #endif
 {
 }
@@ -58,74 +58,40 @@ void QDN_GPIO_Output::Init( ) {
 }
 #endif
 
-void QDN_GPIO_Output::Assert() {
-#ifdef STM32F10X_XL
-	GPIO_SetBits(gpio,pinMask);
-#else
-    gpio->BSRRL = pinMask;
-#endif
-    //GPIO_SetBits(gpio,pinMask);
-}
-void QDN_GPIO_Output::Assert(bool value) {
-    GPIO_WriteBit(gpio,pinMask,value?Bit_SET:Bit_RESET);
-}
-void QDN_GPIO_Output::Deassert() {
-#ifdef STM32F10X_XL
-	GPIO_ResetBits(gpio,pinMask);
-#else
-    gpio->BSRRH = pinMask;
-#endif
-    //GPIO_ResetBits(gpio,pinMask);
-}
-void QDN_GPIO_Output::Toggle() {
-#ifdef STM32F10X_XL
-	BitAction ba = (BitAction) GPIO_ReadInputDataBit(gpio,pinMask);
-	Assert(!ba);
-#else
-    GPIO_ToggleBits(gpio,pinMask);
-#endif
-}
-bool QDN_GPIO_Output::IsAsserted() {
+
+bool QDN_OutputPin::IsAsserted() {
     return GPIO_ReadOutputDataBit(gpio,pinMask) != 0;
 }
 
-///---
 
 QDN_GPIO_OutputN::QDN_GPIO_OutputN(GPIO_TypeDef* gpio0, int pin0)
-: QDN_GPIO_Output(gpio0,pin0) {
+#ifdef STM32F10X_XL
+	: QDN_OutputPin(gpio0,pin0,GPIO_Mode_Out_PP,gpio0->BRR,gpio0->BSRR)
+#else
+	: QDN_OutputPin(gpio0,pin0,GPIO_OType_PP,gpio0->BSRRH,gpio0->BSRRL)
+#endif
+{
 }
 
-void QDN_GPIO_OutputN::Deassert() {
-#ifdef STM32F10X_XL
-	GPIO_SetBits(gpio,pinMask);
-#else
-	gpio->BSRRL = pinMask;
-#endif
-}
-void QDN_GPIO_OutputN::Assert() {
-#ifdef STM32F10X_XL
-	GPIO_ResetBits(gpio,pinMask);
-#else
-    gpio->BSRRH = pinMask;
-#endif
-}
 
-///---
 
 QDN_GPIO_OpenDrainN::QDN_GPIO_OpenDrainN(GPIO_TypeDef* gpio0, int pin0)
-: QDN_GPIO_OutputN(gpio0,pin0) {
 #ifdef STM32F10X_XL
-	mode = GPIO_Mode_Out_OD;
+	: QDN_OutputPin(gpio0,pin0,GPIO_Mode_Out_OD,gpio0->BRR,gpio0->BSRR)
 #else
-	otype = GPIO_OType_OD;
+	: QDN_OutputPin(gpio0,pin0,GPIO_OType_OD,gpio0->BSRRH,gpio0->BSRRL)
 #endif
-
+{
 }
 
 ///-------------------------------------------------------------------------
 
+bool     QDN_InputPin::IsAsserted() {
+    return (GPIO_ReadInputDataBit(gpio,pinMask) != polarity);
+}
+
 QDN_GPIO_Input::QDN_GPIO_Input(GPIO_TypeDef* gpio0, int pin0)
-: QDN_Pin(gpio0,pin0, GPIO_Mode_IPD)
+: QDN_InputPin(gpio0,pin0, GPIO_Mode_IPD,1)
 {
 
 }
@@ -148,9 +114,7 @@ void     QDN_GPIO_Input::Init() {
 #endif
 
 
-bool     QDN_GPIO_Input::IsAsserted() {
-    return (GPIO_ReadInputDataBit(gpio,pinMask) != 0);
-}
+
 #if 0
 void     QDN_GPIO_Input::HiZ() {
     GPIO_InitTypeDef GPIO_InitStructure;
@@ -168,9 +132,10 @@ void     QDN_GPIO_Input::HiZ() {
 #endif
 
 
-QDN_GPIO_InputN::QDN_GPIO_InputN(GPIO_TypeDef* gpio0, int pin0) : QDN_GPIO_Input(gpio0, pin0) { }
-bool QDN_GPIO_InputN::IsAsserted() {
-    return (GPIO_ReadInputDataBit(gpio,pinMask) == 0);
+QDN_GPIO_InputN::QDN_GPIO_InputN(GPIO_TypeDef* gpio0, int pin0)
+: QDN_InputPin(gpio0, pin0,GPIO_Mode_IPD,1)
+{
+
 }
 
 /*

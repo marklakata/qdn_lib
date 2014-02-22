@@ -350,6 +350,15 @@ typedef int XOS_Mutex_t;
 #define XOS_EnterNestableInterrupt()
 #define XOS_LeaveNestableInterrupt()
   
+#ifdef __cplusplus
+extern "C" {
+#endif
+uint32_t XOS_GetTime32(void);      // please define based on jiffy timer or whatever in user code
+void     XOS_DelayMs(uint32_t ms);
+#ifdef __cplusplus
+}
+#endif
+
 typedef struct {
     uint8_t* buffer;
     uint8_t  elemSize;

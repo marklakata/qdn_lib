@@ -30,7 +30,8 @@ public:
 	void Init();
 	void HiZ();
 #ifndef STM32F10X_XL
-	void SetAF(uint8_t altFun) {
+	void SetAF(uint8_t altFun)
+	{
 		GPIO_PinAFConfig(gpio, pinNum, altFunc);
 	}
 
@@ -45,46 +46,83 @@ public:
     MODE_t mode;
 };
 
-class QDN_GPIO_Output : public QDN_Pin
+class QDN_OutputPin  : public QDN_Pin
+{
+public:
+	QDN_OutputPin(GPIO_TypeDef* gpio0, int pin0,MODE_t mode0,
+			__IO uint32_t& assertReg0,  __IO uint32_t& deassertReg0)
+		: QDN_Pin(gpio0, pin0, mode0)
+		, assertReg(assertReg0)
+		, deassertReg(deassertReg0)
+	{
+
+	}
+	void Assert()
+	{
+		assertReg = pinMask;
+	}
+    void Assert(bool v)
+    {
+    	if (v) Assert(); else Deassert();
+    }
+    void Deassert()
+    {
+    	deassertReg = pinMask;
+    }
+    void Toggle()
+    {
+    	if (IsAsserted()) Deassert(); else Assert();
+    }
+    bool IsAsserted();
+private:
+    __IO uint32_t& assertReg;
+    __IO uint32_t& deassertReg;
+};
+
+class QDN_GPIO_Output : public QDN_OutputPin
 {
 public:
     QDN_GPIO_Output(GPIO_TypeDef* gpio0, int pin0);
-public:
-//    void Init();
-    void Assert();
-    void Assert(bool v);
-    void Deassert();
-//    void HiZ();
-    void Toggle();
-    bool IsAsserted();
 };
 
-class QDN_GPIO_OutputN : public QDN_GPIO_Output
+class QDN_GPIO_OutputN : public QDN_OutputPin
 {
 public:
     QDN_GPIO_OutputN(GPIO_TypeDef* gpio0, int pin0);
-    void Deassert();
-    void Assert();
 };
 
-class QDN_GPIO_OpenDrainN : public QDN_GPIO_OutputN {
+class QDN_GPIO_OpenDrainN : public QDN_OutputPin
+{
 public:
     QDN_GPIO_OpenDrainN(GPIO_TypeDef* gpio0, int pin0);
 };
 
-class QDN_GPIO_Input : public QDN_Pin
+////////////////////////////////////////////////////////////////////
+
+
+class QDN_InputPin : public QDN_Pin
+{
+public:
+	QDN_InputPin(GPIO_TypeDef* gpio0, int pin0,MODE_t mode0, uint8_t polarity0)
+		: QDN_Pin(gpio0,pin0,mode0)
+		, polarity(polarity0)
+	{
+
+	}
+    bool IsAsserted();
+private:
+    uint8_t polarity;
+};
+
+class QDN_GPIO_Input : public QDN_InputPin
 {
 public:
     QDN_GPIO_Input(GPIO_TypeDef* gpio0, int pin0);
-//    void Init();
-    bool IsAsserted();
-//    void HiZ();
 };
 
-class QDN_GPIO_InputN : public QDN_GPIO_Input {
+class QDN_GPIO_InputN : public QDN_InputPin {
 public:
     QDN_GPIO_InputN(GPIO_TypeDef* gpio0, int pin0);
-    bool IsAsserted();
 };
 
 #endif
