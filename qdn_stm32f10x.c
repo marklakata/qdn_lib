@@ -70,7 +70,13 @@ void QDN_VectorInit(void)
     } else {
         base = 0;
     }
-    if (size > 288) { // size of stm32f100
+#ifdef STM32F10X_XL
+#define MAX_VTOR_SIZE 484
+#else
+#error fix this logic.
+#define MAX_VTOR_SIZE 288 // size of stm32f100
+#endif
+    if (size > MAX_VTOR_SIZE) {
         // not supported!
         while(1);
     } else if (size > 256) {
