@@ -54,7 +54,7 @@ public:
 	}
 
 private:
-	volatile ELEMENT* const (&buffer);
+	volatile ELEMENT *buffer;
 	volatile uint32_t wptr;
 	volatile uint32_t rptr;
 public:

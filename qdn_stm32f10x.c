@@ -70,7 +70,7 @@ void QDN_VectorInit(void)
     } else {
         base = 0;
     }
-#ifdef STM32F10X_XL
+#if defined(STM32F10X_XL) || defined(STM32F10X_MD)
 #define MAX_VTOR_SIZE 484
 #else
 #error fix this logic.

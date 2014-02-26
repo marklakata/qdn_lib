@@ -87,7 +87,7 @@ QDN_GPIO_OpenDrainN::QDN_GPIO_OpenDrainN(GPIO_TypeDef* gpio0, int pin0)
 ///-------------------------------------------------------------------------
 
 bool     QDN_InputPin::IsAsserted() {
-    return (GPIO_ReadInputDataBit(gpio,pinMask) != polarity);
+    return (GPIO_ReadInputDataBit(gpio,pinMask) == polarity);
 }
 
 QDN_GPIO_Input::QDN_GPIO_Input(GPIO_TypeDef* gpio0, int pin0)
@@ -133,7 +133,7 @@ void     QDN_GPIO_Input::HiZ() {
 
 
 QDN_GPIO_InputN::QDN_GPIO_InputN(GPIO_TypeDef* gpio0, int pin0)
-: QDN_InputPin(gpio0, pin0,GPIO_Mode_IPD,1)
+: QDN_InputPin(gpio0, pin0,GPIO_Mode_IPD,0)
 {
 
 }
