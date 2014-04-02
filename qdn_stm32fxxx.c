@@ -42,3 +42,35 @@ void QDN_NVIC_Init(NVIC_InitTypeDef* NVIC_InitStruct) {
     NVIC_Init(NVIC_InitStruct);
 
 }
+
+
+#include "stm32f10x.h"
+
+extern uint32_t SystemCoreClock;
+
+void QDN_DWT_Init(void)
+{
+  if (!(CoreDebug->DEMCR & CoreDebug_DEMCR_TRCENA_Msk))
+  {
+    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+    DWT->CYCCNT = 0;
+    DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+  }
+}
+
+uint32_t QDN_DWT_Get(void)
+{
+  return DWT->CYCCNT;
+}
+
+__inline
+uint8_t QDN_DWT_Compare(int32_t tp)
+{
+  return (((int32_t)DWT_Get() - tp) < 0);
+}
+
+void QDN_DWT_Delay(uint32_t us) // microseconds
+{
+  int32_t tp = DWT_Get() + us * (SystemCoreClock/1000000);
+  while (DWT_Compare(tp));
+}

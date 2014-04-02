@@ -40,6 +40,8 @@ extern "C" {
 void QDN_NVIC_Init(NVIC_InitTypeDef* NVIC_InitStruct);
 void QDN_SystemReset(void);
 
+void QDN_DWT_Init(void);
+
 #ifdef __cplusplus
 }
 #endif

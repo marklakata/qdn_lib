@@ -61,6 +61,7 @@ void     QDN_Pin::Init() {
 
 //////////////////
 
+__IO uint32_t QDN_OutputPin::dummyRegister = 0;
 
 QDN_GPIO_Output:: QDN_GPIO_Output(GPIO_TypeDef* gpio0, int pin0)
 #ifdef STM32F10X_XL

@@ -28,30 +28,87 @@
  * either expressed or implied, of the FreeBSD Project.
  **************************************************************************/
 
-#include "qdn_spi.h"
+
+#include "qdn_dac_mcp4822.h"
 #include "qdn_gpio.h"
+#include "qdn_spi.h"
 
-QDN_SPI::QDN_SPI(QDN_GPIO_Output& Clk, QDN_GPIO_Output& MOSI, QDN_GPIO_Input& MISO)
+#define DAC_CHAN_A  0x0000
+#define DAC_CHAN_B  0x8000
+
+#define OPERATING    0x0100
+#define SHUTDOWN     0x0000
+
+
+QDN_OutputPin noConnect(false);
+
+QDN_DAC_MCP4822::QDN_DAC_MCP4822(QDN_SPI& spi0, QDN_GPIO_OutputN& cs0)
+	: spi(spi0)
+	, cs(cs0)
+	, ldac(noConnect)
+	, gainCommand(GAIN_1X)
+
 {
 
 }
 
-void QDN_SPI::Init(void)
+QDN_DAC_MCP4822::QDN_DAC_MCP4822(QDN_SPI& spi0, QDN_GPIO_OutputN& cs0, QDN_OutputPin& ldac0)
+	: spi(spi0)
+	, cs(cs0)
+	, ldac(ldac)
+	, gainCommand(GAIN_1X)
+
 {
 
 }
-void QDN_SPI::SetRate(uint32_t rateHz)
-{
 
+void QDN_DAC_MCP4822::Init(void)
+{
+	cs.Deassert();
 }
 
-uint8_t QDN_SPI::WriteRead(uint8_t byte)
+
+int16_t QDN_DAC_MCP4822::SetGain(uint8_t gain)
 {
-	return 0xFF;
+	if (gain == 1)
+	{
+		gainCommand = GAIN_1X;
+	} else if (gain ==2) {
+		gainCommand = GAIN_2X;
+	} else {
+		return -1;
+	}
+	return 0;
 }
 
-uint16_t QDN_SPI::WriteRead(uint16_t word)
+int16_t QDN_DAC_MCP4822::Write(uint8_t channel, uint16_t count )
 {
-	return 0xFFFF;
+    uint16_t command = 0;
 
+	if (channel == 0)
+	{
+		command|= DAC_CHAN_A;
+	} else if (channel == 1)
+	{
+		command |= DAC_CHAN_B;
+	} else {
+		return -1;
+	}
+
+	if (count > 0x0FFF)
+	{
+		return -2;
+	}
+
+	command |= gainCommand;
+	command |= count;
+
+	cs.Assert();
+	spi.WriteRead((uint8_t)((command >> 8) & 0xFF));
+	spi.WriteRead((uint8_t)(command & 0xFF));
+	cs.Deassert();
+	ldac.Assert();
+	ldac.Deassert();
+
+	return 0;
 }

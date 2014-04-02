@@ -28,30 +28,42 @@
  * either expressed or implied, of the FreeBSD Project.
  **************************************************************************/
 
-#include "qdn_spi.h"
-#include "qdn_gpio.h"
+#ifndef _QDN_DAC_MCP4822_H_
+#define _QDN_DAC_MCP4822_H_
 
-QDN_SPI::QDN_SPI(QDN_GPIO_Output& Clk, QDN_GPIO_Output& MOSI, QDN_GPIO_Input& MISO)
+#include <stdint.h>
+
+class QDN_SPI;
+class QDN_GPIO_OutputN;
+class QDN_OutputPin;
+
+
+class QDN_DAC_MCP4822
 {
+public:
+	QDN_DAC_MCP4822(QDN_SPI& spi, QDN_GPIO_OutputN& cs);
+	QDN_DAC_MCP4822(QDN_SPI& spi, QDN_GPIO_OutputN& cs, QDN_OutputPin& ldac);
 
-}
+	void Init(void);
 
-void QDN_SPI::Init(void)
-{
+	/// gain is 1 or 2
+	int16_t SetGain(uint8_t gain);
 
-}
-void QDN_SPI::SetRate(uint32_t rateHz)
-{
+	/// channel is 0(A) or 1(B). Count is 0 to 0xFFF (12 bit)
+	int16_t Write(uint8_t channel, uint16_t count);
 
-}
+private:
+	QDN_SPI& spi;
+	QDN_GPIO_OutputN& cs;
+	QDN_OutputPin& ldac;
 
-uint8_t QDN_SPI::WriteRead(uint8_t byte)
-{
-	return 0xFF;
-}
+#define GAIN_1X     0x0200
+#define GAIN_2X     0x0000
 
-uint16_t QDN_SPI::WriteRead(uint16_t word)
-{
-	return 0xFFFF;
+	uint16_t gainCommand;
+};
 
-}
+
+
+
+#endif

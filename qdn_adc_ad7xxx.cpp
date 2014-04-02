@@ -27,31 +27,42 @@
  * of the authors and should not be interpreted as representing official policies,
  * either expressed or implied, of the FreeBSD Project.
  **************************************************************************/
-
-#include "qdn_spi.h"
+#include "qdn_adc_ad7xxx.h"
 #include "qdn_gpio.h"
+#include "qdn_spi.h"
+#include "qdn_xos.h"
 
-QDN_SPI::QDN_SPI(QDN_GPIO_Output& Clk, QDN_GPIO_Output& MOSI, QDN_GPIO_Input& MISO)
+QDN_ADC_AD7xxx::QDN_ADC_AD7xxx(QDN_SPI& spi0, QDN_GPIO_Output& convst0, QDN_GPIO_Input& busy0)
+    : spi(spi0)
+    , convst(convst0)
+    , busy(busy0)
 {
-
 }
 
-void QDN_SPI::Init(void)
+void QDN_ADC_AD7xxx::Init(void)
 {
-
-}
-void QDN_SPI::SetRate(uint32_t rateHz)
-{
-
+	convst.Deassert();
 }
 
-uint8_t QDN_SPI::WriteRead(uint8_t byte)
+void QDN_ADC_AD7xxx::Convert(void)
 {
-	return 0xFF;
+	convst.Assert();
 }
 
-uint16_t QDN_SPI::WriteRead(uint16_t word)
+uint16_t QDN_ADC_AD7xxx::Read(void)
 {
-	return 0xFFFF;
+	//
+	convst.Deassert();
+	uint16_t value;
 
+	value = spi.WriteRead((uint16_t)0);
+	return value;
+}
+
+
+uint16_t QDN_ADC_AD7xxx::ConvertAndRead(void)
+{
+	Convert();
+	XOS_Delay100Ns(22); // from AD7685 datasheet. Tconv >= 2.2 microseconds
+	return Read();
 }

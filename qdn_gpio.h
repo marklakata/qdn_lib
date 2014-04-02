@@ -85,8 +85,15 @@ public:
 		, assertReg(assertReg0)
 		, deassertReg(deassertReg0)
 	{
+	}
+	QDN_OutputPin(bool dummy)
+		: QDN_Pin((GPIO_TypeDef*)0,0,(MODE_t)0)
+		, assertReg(dummyRegister)
+		, deassertReg(dummyRegister)
+	{
 
 	}
+
 	void Assert()
 	{
 		assertReg = pinMask;
@@ -107,6 +114,7 @@ public:
 private:
     __IO uint32_t& assertReg;
     __IO uint32_t& deassertReg;
+    static __IO uint32_t dummyRegister;
 };
 
 class QDN_GPIO_Output : public QDN_OutputPin

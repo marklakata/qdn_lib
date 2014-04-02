@@ -28,30 +28,35 @@
  * either expressed or implied, of the FreeBSD Project.
  **************************************************************************/
 
-#include "qdn_spi.h"
-#include "qdn_gpio.h"
+// Support for Analog Devices ADC AD7xxx family,
+// including AD7685
 
-QDN_SPI::QDN_SPI(QDN_GPIO_Output& Clk, QDN_GPIO_Output& MOSI, QDN_GPIO_Input& MISO)
+
+#ifndef _QDN_ADC_AD7XXX_H_
+#define _QDN_ADC_AD7XXX_H_
+
+#include <stdint.h>
+
+
+class QDN_SPI;
+class QDN_GPIO_Output;
+class QDN_GPIO_Input;
+
+class QDN_ADC_AD7xxx
 {
+public:
+	QDN_ADC_AD7xxx(QDN_SPI& spi, QDN_GPIO_Output& convst, QDN_GPIO_Input& busy);
+	void Init(void);
 
-}
+	void Convert(void);
+	uint16_t Read(void);
+	uint16_t ConvertAndRead(void);
 
-void QDN_SPI::Init(void)
-{
+private:
+	QDN_SPI&          spi;
+	QDN_GPIO_Output&  convst;
+	QDN_GPIO_Input&   busy;
+};
 
-}
-void QDN_SPI::SetRate(uint32_t rateHz)
-{
 
-}
-
-uint8_t QDN_SPI::WriteRead(uint8_t byte)
-{
-	return 0xFF;
-}
-
-uint16_t QDN_SPI::WriteRead(uint16_t word)
-{
-	return 0xFFFF;
-
-}
+#endif
