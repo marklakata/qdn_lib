@@ -94,22 +94,20 @@ public:
 
 	}
 
-	void Assert()
+	inline void Assert()
 	{
 		assertReg = pinMask;
 	}
-    void Assert(bool v)
+    inline void Assert(bool v)
     {
     	if (v) Assert(); else Deassert();
     }
-    void Deassert()
+    inline void Deassert()
     {
     	deassertReg = pinMask;
     }
-    void Toggle()
-    {
-    	if (IsAsserted()) Deassert(); else Assert();
-    }
+    void Toggle();
+
     bool IsAsserted();
 private:
     __IO uint32_t& assertReg;

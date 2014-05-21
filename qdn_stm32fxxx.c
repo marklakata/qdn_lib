@@ -66,11 +66,11 @@ uint32_t QDN_DWT_Get(void)
 __inline
 uint8_t QDN_DWT_Compare(int32_t tp)
 {
-  return (((int32_t)DWT_Get() - tp) < 0);
+  return (((int32_t)QDN_DWT_Get() - tp) < 0);
 }
 
 void QDN_DWT_Delay(uint32_t us) // microseconds
 {
-  int32_t tp = DWT_Get() + us * (SystemCoreClock/1000000);
-  while (DWT_Compare(tp));
+  int32_t tp = QDN_DWT_Get() + us * (SystemCoreClock/1000000);
+  while (QDN_DWT_Compare(tp));
 }

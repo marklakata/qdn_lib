@@ -32,31 +32,37 @@
 
 void QDN_Pin::HiZ()
 {
-    GPIO_InitTypeDef GPIO_InitStructure;
-    GPIO_StructInit(&GPIO_InitStructure);
-#ifdef STM32F10X_XL
-    GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_IN_FLOATING;
-#else
-    GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_NOPULL;
-    GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_IN;
-#endif
-    GPIO_InitStructure.GPIO_Pin   = (pinMask);
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
-    QDN_GPIO_Init(gpio, &GPIO_InitStructure);
+	if (gpio)
+	{
+		GPIO_InitTypeDef GPIO_InitStructure;
+		GPIO_StructInit(&GPIO_InitStructure);
+	#ifdef STM32F10X_XL
+		GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_IN_FLOATING;
+	#else
+		GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_NOPULL;
+		GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_IN;
+	#endif
+		GPIO_InitStructure.GPIO_Pin   = (pinMask);
+		GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
+		QDN_GPIO_Init(gpio, &GPIO_InitStructure);
+	}
 }
 
 void     QDN_Pin::Init() {
-    GPIO_InitTypeDef GPIO_InitStructure;
-    GPIO_StructInit(&GPIO_InitStructure);
-#ifdef STM32F10X_XL
-    GPIO_InitStructure.GPIO_Mode  = mode;
-#else
-    GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_UP;
-    GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_IN;
-#endif
-    GPIO_InitStructure.GPIO_Pin   = (pinMask);
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
-    QDN_GPIO_Init(gpio, &GPIO_InitStructure);
+	if (gpio)
+	{
+		GPIO_InitTypeDef GPIO_InitStructure;
+		GPIO_StructInit(&GPIO_InitStructure);
+	#ifdef STM32F10X_XL
+		GPIO_InitStructure.GPIO_Mode  = mode;
+	#else
+		GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_UP;
+		GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_IN;
+	#endif
+		GPIO_InitStructure.GPIO_Pin   = (pinMask);
+		GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
+		QDN_GPIO_Init(gpio, &GPIO_InitStructure);
+	}
 }
 
 //////////////////
@@ -91,7 +97,11 @@ void QDN_GPIO_Output::Init( ) {
 
 
 bool QDN_OutputPin::IsAsserted() {
-    return GPIO_ReadOutputDataBit(gpio,pinMask) != 0;
+	if (gpio) {
+		return (gpio->ODR & pinMask) != 0;
+	} else {
+		return false;
+	}
 }
 
 
@@ -113,6 +123,18 @@ QDN_GPIO_OpenDrainN::QDN_GPIO_OpenDrainN(GPIO_TypeDef* gpio0, int pin0)
 	: QDN_OutputPin(gpio0,pin0,GPIO_OType_OD,gpio0->BSRRH,gpio0->BSRRL)
 #endif
 {
+}
+
+void QDN_OutputPin::Toggle()
+{
+	if(gpio)
+	{
+#ifdef STM32F10X_XL
+		gpio->ODR ^= pinMask;
+#else
+#error not implemented yet
+#endif
+	}
 }
 
 ///-------------------------------------------------------------------------
