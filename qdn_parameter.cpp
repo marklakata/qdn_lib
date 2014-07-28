@@ -30,6 +30,7 @@
 
 #include "qdn_parameter.h"
 #include "qdn_flash.h" // generic flash interface
+#include "qdn_util.h"
 
 //#include "memory_map.h"
 #include <string.h>
@@ -144,7 +145,7 @@ public:
                 pattern <<=1;
             }
         } else {
-            while(1);
+        	QDN_Exception();;
         }
 #endif
     }
@@ -246,7 +247,7 @@ public:
         int desPages = NUM_PARAM_PAGES;
 
         if (actPages != desPages) {
-            while(1);
+        	QDN_Exception();;
         }
 #endif
     

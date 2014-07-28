@@ -283,7 +283,7 @@ void main(void)
 
   write_block_int();                        // This portion of code is executed
                                             // in RAM
-  while(1);                                 // Loop forever, SET BREAKPOINT HERE
+  QDN_Exception();                                 // Loop forever, SET BREAKPOINT HERE
 }
 
 //------------------------------------------------------------------------------

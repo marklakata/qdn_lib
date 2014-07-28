@@ -36,6 +36,7 @@
 void UnpackUInt16LE(const void* ptr,uint16_t& value) ;
 void UnpackUInt32LE(const void* ptr,uint32_t& value);
 void PackUInt32LE( uint32_t value, void* ptr) ;
+void QDN_Exception(const char* message = "");
 
 #endif
 

@@ -34,6 +34,7 @@
 // RTOS of choice.
 //
 #include "qdn_xos.h"
+#include "qdn_util.h"
 #ifdef STM32F10X_XL
 #include "stm32f10x.h"
 #include "stm32f10x_usart.h"
@@ -78,7 +79,7 @@ ComPortHandle_t* QDN_SerialPortInitEx( USART_TypeDef* uart, uint32_t ulWantedBau
         }
     }
     if (port->uart == 0) {
-        while(1); 
+        QDN_Exception(); 
     }
 
 
@@ -88,7 +89,7 @@ ComPortHandle_t* QDN_SerialPortInitEx( USART_TypeDef* uart, uint32_t ulWantedBau
     XOS_FixedQueueCreate(port->rxQueue ,uxQueueLength, sizeof(uint8_t));
 	if( ( port->rxQueue = 0 ) )
 	{
-        while(1);
+        QDN_Exception();
     }
 #endif
 
@@ -97,7 +98,7 @@ ComPortHandle_t* QDN_SerialPortInitEx( USART_TypeDef* uart, uint32_t ulWantedBau
 #else
     XOS_FixedQueueCreate(port->txQueue, uxQueueLength, sizeof(uint8_t));
     if ( port->txQueue == 0 ) {
-        while(1);
+        QDN_Exception();
     }
 #endif
 	

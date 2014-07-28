@@ -108,21 +108,21 @@ void QDN_VectorInit(void)
 #endif
     if (size > MAX_VTOR_SIZE) {
         // not supported!
-        while(1);
+        QDN_Exception();
     } else if (size > 256) {
         // alignment to 512 byte page
         if (offset & (0x1FF)) {
-            while(1);
+            QDN_Exception();
         }
     } else if (size > 0x80) {
         // alignment to 256 byte page
         if (offset & (0xFF)) {
-            while(1);
+            QDN_Exception();
         }
     } else {
         // alignment to 128 byte page
         if (offset & 0x7F) {
-            while(1);
+            QDN_Exception();
         }
     }
     

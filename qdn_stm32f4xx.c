@@ -67,21 +67,21 @@ void QDN_VectorInit(void) {
     }
     if (size > 392) {
         // not supported!
-        while(1);
+        QDN_Exception();
     } else if (size > 256) {
         // alignment to 512 byte page
         if (offset & (0x1FF)) {
-            while(1);
+            QDN_Exception();
         }
     } else if (size > 0x80) {
         // alignment to 256 byte page
         if (offset & (0xFF)) {
-            while(1);
+            QDN_Exception();
         }
     } else {
         // alignment to 128 byte page
         if (offset & 0x7F) {
-            while(1);
+            QDN_Exception();
         }
     }
     
@@ -132,7 +132,7 @@ static void QDN_ADC_dmaToArray(DMA_Stream_TypeDef *dma, ADC_TypeDef* adc, volati
     case (DMA1_Stream5_BASE&0xFF): channel = DMA_Channel_5; break;
     case (DMA1_Stream6_BASE&0xFF): channel = DMA_Channel_6; break;
     case (DMA1_Stream7_BASE&0xFF): channel = DMA_Channel_7; break;
-    default: while(1);
+    default: QDN_Exception();
     }    
     DMA_InitTypeDef DMA_InitStructure;
     DMA_StructInit(&DMA_InitStructure);
@@ -190,7 +190,7 @@ void QDN_ADC_ConfigureDMAAndMuxMany(DMA_Stream_TypeDef *dma, volatile uint16_t* 
         channels[numChannels++] = channel;
     } while (1);
     if (numChannels == sizeof(channels)) {
-        while(1);
+        QDN_Exception();
     }
 
     QDN_ADC_dmaToArray(dma, adc, dst, numChannels);

@@ -57,5 +57,8 @@ void PackUInt32LE( uint32_t value, void* ptr) {
     pu8[3] = (uint8_t)(value & 0xFF);
 }
 
-
+void QDN_Exception(const char* message)
+{
+	__builtin_trap();
+}
 
