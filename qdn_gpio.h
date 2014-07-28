@@ -58,6 +58,7 @@ protected:
 	}
 public:
 	void Init();
+	void HighSpeedInit();
 	void HiZ();
 #ifndef STM32F10X_XL
 	void SetAF(uint8_t altFun)

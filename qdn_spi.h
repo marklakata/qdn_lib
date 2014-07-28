@@ -36,14 +36,22 @@
 class QDN_GPIO_Output;
 class QDN_GPIO_Input;
 
+struct SpiThing;
+
 class QDN_SPI
 {
 public:
-	QDN_SPI(QDN_GPIO_Output& Clk, QDN_GPIO_Output& MOSI, QDN_GPIO_Input& MISO);
+	QDN_SPI(int unit, QDN_GPIO_Output& Clk, QDN_GPIO_Output& MOSI, QDN_GPIO_Input& MISO);
 	void Init(void);
 	void SetRate(uint32_t rateHz);
-	uint8_t  WriteRead(uint8_t byte);
-	uint16_t WriteRead(uint16_t word);
+	uint8_t  WriteReadU8(uint8_t byte);
+	uint16_t WriteReadU16_LE(uint16_t word);
+	uint16_t WriteReadU16_BE(uint16_t word);
+private:
+	QDN_GPIO_Output& Clk;
+	QDN_GPIO_Output& MOSI;
+	QDN_GPIO_Input& MISO;
+	SpiThing* spi;
 };
 
 

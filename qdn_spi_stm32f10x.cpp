@@ -30,14 +30,66 @@
 
 #include "qdn_spi.h"
 #include "qdn_gpio.h"
+#include "qdn_util.h"
+#include "stm32f10x_spi.h"
+#include "stm32f10x_rcc.h"
 
-QDN_SPI::QDN_SPI(QDN_GPIO_Output& Clk, QDN_GPIO_Output& MOSI, QDN_GPIO_Input& MISO)
+#if 1
+struct SpiThing : public SPI_TypeDef
 {
+};
+#else
+struct SpiThing {
+	SPI_TypeDef spi;
+};
+#endif
 
+
+QDN_SPI::QDN_SPI(int unit, QDN_GPIO_Output& Clk0, QDN_GPIO_Output& MOSI0, QDN_GPIO_Input& MISO0)
+	: Clk(Clk0)
+	, MOSI(MOSI0)
+	, MISO(MISO0)
+{
+	switch(unit)
+	{
+	case 1:spi = static_cast<SpiThing*>(SPI1); break;
+	case 2:spi = static_cast<SpiThing*>(SPI2); break;
+	case 3:spi = static_cast<SpiThing*>(SPI3); break;
+	default: QDN_Exception(); break;
+	}
+
+	Clk.mode = GPIO_Mode_AF_PP;
+	MOSI.mode = GPIO_Mode_AF_PP;
+	MISO.mode = GPIO_Mode_AF_PP;
 }
 
 void QDN_SPI::Init(void)
 {
+	Clk.HighSpeedInit();
+	MOSI.HighSpeedInit();
+	MISO.HighSpeedInit();
+
+	if (spi == SPI1)  RCC->APB2ENR |= RCC_APB2Periph_SPI1;
+	else if (spi == SPI2) RCC->APB1ENR |= RCC_APB1Periph_SPI2;
+	else if (spi == SPI3) RCC->APB1ENR |= RCC_APB1Periph_SPI3;
+
+
+    SPI_InitTypeDef spiInitStruct;
+
+    SPI_I2S_DeInit(spi);
+    SPI_StructInit(&spiInitStruct);
+    spiInitStruct.SPI_Direction = SPI_Direction_2Lines_FullDuplex;
+    spiInitStruct.SPI_Mode      = SPI_Mode_Master;
+    spiInitStruct.SPI_DataSize  = SPI_DataSize_8b;
+    spiInitStruct.SPI_CPOL      = SPI_CPOL_Low;
+    spiInitStruct.SPI_CPHA      = SPI_CPHA_1Edge;
+    spiInitStruct.SPI_NSS       = SPI_NSS_Soft;
+    spiInitStruct.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_32; //SPI_BaudRatePrescaler_4;
+    spiInitStruct.SPI_FirstBit  = SPI_FirstBit_MSB;
+    spiInitStruct.SPI_CRCPolynomial = 7;
+    SPI_Init(spi, &spiInitStruct);
+
+    SPI_Cmd(spi, ENABLE);
 
 }
 void QDN_SPI::SetRate(uint32_t rateHz)
@@ -45,13 +97,33 @@ void QDN_SPI::SetRate(uint32_t rateHz)
 
 }
 
-uint8_t QDN_SPI::WriteRead(uint8_t byte)
+uint8_t QDN_SPI::WriteReadU8(uint8_t byte)
 {
-	return 0xFF;
+	spi->DR = byte;
+	while( (spi->SR & SPI_I2S_FLAG_TXE)  ==0 ) ; // wait until TX is empty
+	while( (spi->SR & SPI_I2S_FLAG_RXNE) ==0 ) ; // wait until RX is full
+
+#if 1
+	volatile int i;
+	for(i=0;i<50;i++) {
+	}
+#endif
+	return (uint8_t) spi->DR; //lint !e529
 }
 
-uint16_t QDN_SPI::WriteRead(uint16_t word)
+uint16_t QDN_SPI::WriteReadU16_LE(uint16_t word)
 {
-	return 0xFFFF;
+	uint16_t result = 0;
+	result =  WriteReadU8(word & 0xFF);
+	result |= (static_cast<uint16_t>(WriteReadU8(word >>8))<<8);
+	return result;
+}
 
+
+uint16_t QDN_SPI::WriteReadU16_BE(uint16_t word)
+{
+	uint16_t result = 0;
+	result =  (static_cast<uint16_t>(WriteReadU8(word >> 8)) << 8);
+	result |= WriteReadU8(word & 0xFF);
+	return result;
 }

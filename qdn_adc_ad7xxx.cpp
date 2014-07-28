@@ -55,7 +55,7 @@ uint16_t QDN_ADC_AD7xxx::Read(void)
 	convst.Deassert();
 	uint16_t value;
 
-	value = spi.WriteRead((uint16_t)0);
+	value = spi.WriteReadU16_BE(0); // this might be Little Endian..
 	return value;
 }
 

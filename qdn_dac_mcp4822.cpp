@@ -104,8 +104,8 @@ int16_t QDN_DAC_MCP4822::Write(uint8_t channel, uint16_t count )
 	command |= count;
 
 	cs.Assert();
-	spi.WriteRead((uint8_t)((command >> 8) & 0xFF));
-	spi.WriteRead((uint8_t)(command & 0xFF));
+	spi.WriteReadU8((command >> 8) & 0xFF);
+	spi.WriteReadU8(command & 0xFF);
 	cs.Deassert();
 	ldac.Assert();
 	ldac.Deassert();

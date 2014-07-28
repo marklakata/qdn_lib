@@ -33,11 +33,51 @@
 
 #include "qdn_gpio.h"
 
+class QDN_ADC;
+class QDN_ADC_Pin;
+
+class MyFoo
+{
+public:
+	MyFoo(int unit) {}
+};
+
+class QDN_DMA
+{
+public:
+	QDN_DMA(int unit, int channel);
+#if 0
+	void Init();
+	void SetADCtoMem(QDN_ADC& adc, volatile uint16_t* dst, uint32_t size);
+
+private:
+	friend QDN_ADC;
+	DMA_TypeDef* dma;
+	DMA_Channel_TypeDef* dmaChannel;
+#endif
+};
+
+class QDN_ADC
+{
+public:
+	QDN_ADC(int unit);
+    void DMA_Configure(QDN_DMA& dma, volatile uint16_t* dstArray, /*QDN_ADC_Pin*/...);
+    void EnableAndCalibrate();
+private:
+    friend QDN_ADC_Pin;
+    friend QDN_DMA;
+    int sampleTime;
+    ADC_TypeDef* adc;
+};
+
 class QDN_ADC_Pin : QDN_Pin {
 public:
-    QDN_ADC_Pin(GPIO_TypeDef* gpio0, int pin0);
+    QDN_ADC_Pin(GPIO_TypeDef* gpio0, int pin0, QDN_ADC& adc0);
     void Init();
     uint16_t Channel;
+
+    uint16_t ReadOnce();
+    QDN_ADC& adc;
 };
 
 #endif

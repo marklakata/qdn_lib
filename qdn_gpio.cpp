@@ -65,6 +65,22 @@ void     QDN_Pin::Init() {
 	}
 }
 
+void  QDN_Pin::HighSpeedInit() {
+	if (gpio)
+	{
+		GPIO_InitTypeDef GPIO_InitStructure;
+		GPIO_StructInit(&GPIO_InitStructure);
+	#ifdef STM32F10X_XL
+		GPIO_InitStructure.GPIO_Mode  = mode;
+	#else
+		GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_UP;
+		GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_IN;
+	#endif
+		GPIO_InitStructure.GPIO_Pin   = (pinMask);
+		GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+		QDN_GPIO_Init(gpio, &GPIO_InitStructure);
+	}
+}
 //////////////////
 
 __IO uint32_t QDN_OutputPin::dummyRegister = 0;
