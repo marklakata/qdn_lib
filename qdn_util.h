@@ -33,14 +33,18 @@
 
 #include <stdint.h>
 
+
+#ifdef __cplusplus
 void UnpackUInt16LE(const void* ptr,uint16_t& value) ;
 void UnpackUInt32LE(const void* ptr,uint32_t& value);
+#endif
 void PackUInt32LE( uint32_t value, void* ptr) ;
 
 #ifdef __cplusplus
-extern "C"
+extern "C" void QDN_Exception(const char* message = "");
+#else
+void QDN_Exception(const char* message );
 #endif
-void QDN_Exception(const char* message = "");
 
 #endif
 

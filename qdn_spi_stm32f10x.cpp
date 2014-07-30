@@ -73,6 +73,8 @@ void QDN_SPI::Init(void)
 	MOSI.HighSpeedInit();
 	MISO.HighSpeedInit();
 
+	RCC->APB2ENR |= RCC_APB2Periph_AFIO ;
+
 	if (spi == SPI1)  RCC->APB2ENR |= RCC_APB2Periph_SPI1;
 	else if (spi == SPI2) RCC->APB1ENR |= RCC_APB1Periph_SPI2;
 	else if (spi == SPI3) RCC->APB1ENR |= RCC_APB1Periph_SPI3;

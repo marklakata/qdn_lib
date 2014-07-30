@@ -35,6 +35,7 @@
 #include "stm32f10x_bkp.h"
 #include "stm32f10x_rtc.h"
 #include "qdn_rtc.h"
+#include "qdn_util.h"
 
 #include <stdint.h>
 
@@ -108,21 +109,21 @@ void QDN_VectorInit(void)
 #endif
     if (size > MAX_VTOR_SIZE) {
         // not supported!
-        QDN_Exception();
+        QDN_Exception("not supported");
     } else if (size > 256) {
         // alignment to 512 byte page
         if (offset & (0x1FF)) {
-            QDN_Exception();
+            QDN_Exception("not supported");
         }
     } else if (size > 0x80) {
         // alignment to 256 byte page
         if (offset & (0xFF)) {
-            QDN_Exception();
+            QDN_Exception("not supported");
         }
     } else {
         // alignment to 128 byte page
         if (offset & 0x7F) {
-            QDN_Exception();
+            QDN_Exception("not supported");
         }
     }
     

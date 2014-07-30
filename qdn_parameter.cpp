@@ -546,9 +546,9 @@ extern "C"  void QDN_ParamSetFloatRaw(uint16_t index, float value) {
     paramDb.SetParameterRaw(index,ivalue);
 }
 
-extern "C"  void  QDN_ParamSetString(uint16_t index, uint16_t lastIndex, char* buffer, int32_t length)
+extern "C"  void  QDN_ParamSetString(uint16_t firstIndex, uint16_t lastIndex, char* buffer, int32_t length)
 {
-	for(int index=index;index<=lastIndex;index++)
+	for(uint16_t index=firstIndex;index<=lastIndex;index++)
 	{
 		int32_t ivalue = 0;
 		if (length >0)
