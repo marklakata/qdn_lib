@@ -42,8 +42,15 @@ class QDN_SPI
 {
 public:
 	QDN_SPI(int unit, QDN_GPIO_Output& Clk, QDN_GPIO_Output& MOSI, QDN_GPIO_Input& MISO);
+
+	enum class ClockPolarity : uint8_t { IdleHi, IdleLo };
+	enum class ClockPhase    : uint8_t { FirstEdge, SecondEdge };
+	QDN_SPI& SetClockPolarity(ClockPolarity state0)     { clockPolarity = state0    ; return *this;}
+	QDN_SPI& SetClockPhase(ClockPhase phase)            { clockPhase    = phase     ; return *this;}
+	QDN_SPI& SetClockRateShift(uint32_t prescaler0)     { rightShift    = prescaler0; return *this;}
+
 	void Init(void);
-	void SetRate(uint32_t rateHz);
+
 	uint8_t  WriteReadU8(uint8_t byte);
 	uint16_t WriteReadU16_LE(uint16_t word);
 	uint16_t WriteReadU16_BE(uint16_t word);
@@ -52,6 +59,9 @@ private:
 	QDN_GPIO_Output& MOSI;
 	QDN_GPIO_Input& MISO;
 	SpiThing* spi;
+	ClockPolarity clockPolarity;
+	ClockPhase    clockPhase;
+	uint8_t       rightShift;
 };
 
 

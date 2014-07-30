@@ -49,7 +49,7 @@
 
 QDN_DMA::QDN_DMA(int unit, int channel)
 {
-#if 0
+#if 1
 	if (unit == 1) {
 		dma = DMA1;
 		if (channel == 1) dmaChannel = DMA1_Channel1;
@@ -63,7 +63,7 @@ QDN_DMA::QDN_DMA(int unit, int channel)
 #endif
 }
 
-#if 0
+#if 1
 void QDN_DMA::Init()
 {
 	if (dma == DMA1)
@@ -96,6 +96,10 @@ void QDN_DMA::SetADCtoMem(QDN_ADC& adc, volatile uint16_t* dst, uint32_t size)
 	DMA_InitStructure.DMA_Mode               = DMA_Mode_Circular; // DMA_Mode_Normal;
 
 	DMA_Init(dmaChannel, &DMA_InitStructure);
+}
+
+void QDN_DMA::Enable()
+{
 	DMA_Cmd(dmaChannel, ENABLE);
 }
 
@@ -110,19 +114,48 @@ GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_AN;
 , Channel(0)
 , adc(adc0)
 {
-    if (gpio == GPIOA) {
-        switch(pin0) {
-        case 0: Channel = ADC_Channel_0; break;
-        case 3: Channel = ADC_Channel_3; break;
-        case 5: Channel = ADC_Channel_5; break;
+    if (gpio == GPIOA)
+    {
+    	if (pin0 >=0 && pin0 < 16)
+    		Channel = pin0;
+    	else
+    		QDN_Exception();
+    	if (adc0.adc == ADC3 && pin0 >= 4) QDN_Exception();
+	}
+    else if (gpio == GPIOB)
+    {
+		switch(pin0) {
+		case 0: Channel = ADC_Channel_8; break;
+		case 1: Channel = ADC_Channel_9; break;
         default: QDN_Exception();
         }
-    } else if (gpio == GPIOC) {
+    }
+    else if (gpio == GPIOC)
+    {
         switch(pin0) {
         case 0: Channel = ADC_Channel_10; break;
+        case 1: Channel = ADC_Channel_11; break;
+        case 2: Channel = ADC_Channel_12; break;
+        case 3: Channel = ADC_Channel_13; break;
+        case 4: Channel = ADC_Channel_14; break;
+        case 5: Channel = ADC_Channel_15; break;
         default: QDN_Exception();
         }
-    } else {
+    }
+    else if (gpio == GPIOF)
+    {
+    	if (adc0.adc != ADC3) QDN_Exception();
+    	switch(pin0) {
+    	case 6: Channel = ADC_Channel_4; break;
+    	case 7: Channel = ADC_Channel_5; break;
+    	case 8: Channel = ADC_Channel_6; break;
+    	case 9: Channel = ADC_Channel_7; break;
+    	case 10:Channel = ADC_Channel_8; break;
+        default: QDN_Exception();
+        }
+    }
+	else
+	{
     	QDN_Exception();
     }
 
@@ -155,9 +188,19 @@ QDN_ADC::QDN_ADC(int unit)
 	}
 }
 
+extern "C"
+void DMA1_Channel1_IRQHandler(void);
+
+uint32_t dma1_1Done = 0;
+extern "C"
+void DMA1_Channel1_IRQHandler(void)
+{
+	dma1_1Done++;
+}
+
 void QDN_ADC::DMA_Configure(QDN_DMA& dma, volatile uint16_t* destinationPtr, /*QDN_ADC_Pin, QDN_ADC_Pin,*/...)
 {
-#if 0
+#if 1
 	dma.Init();
 
     NVIC_InitTypeDef NVIC_InitStructure;

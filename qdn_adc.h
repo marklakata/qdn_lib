@@ -46,10 +46,10 @@ class QDN_DMA
 {
 public:
 	QDN_DMA(int unit, int channel);
-#if 0
+#if 1
 	void Init();
 	void SetADCtoMem(QDN_ADC& adc, volatile uint16_t* dst, uint32_t size);
-
+	void Enable();
 private:
 	friend QDN_ADC;
 	DMA_TypeDef* dma;

@@ -40,22 +40,24 @@
 
 class QDN_SPI;
 class QDN_GPIO_Output;
-class QDN_GPIO_Input;
+class QDN_GPIO_InputN;
 
 class QDN_ADC_AD7xxx
 {
 public:
-	QDN_ADC_AD7xxx(QDN_SPI& spi, QDN_GPIO_Output& convst, QDN_GPIO_Input& busy);
+	QDN_ADC_AD7xxx(QDN_SPI& spi, QDN_GPIO_Output& convst, QDN_GPIO_InputN& busy, uint8_t chainLen0 = 1);
 	void Init(void);
 
 	void Convert(void);
 	uint16_t Read(void);
 	uint16_t ConvertAndRead(void);
+	bool     ChainedConvertAndRead(uint16_t* data);
 
 private:
 	QDN_SPI&          spi;
 	QDN_GPIO_Output&  convst;
-	QDN_GPIO_Input&   busy;
+	QDN_GPIO_InputN&  busy;
+	uint8_t chainLen;
 };
 
 

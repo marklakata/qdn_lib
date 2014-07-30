@@ -37,6 +37,7 @@
 #if 1
 struct SpiThing : public SPI_TypeDef
 {
+
 };
 #else
 struct SpiThing {
@@ -49,6 +50,9 @@ QDN_SPI::QDN_SPI(int unit, QDN_GPIO_Output& Clk0, QDN_GPIO_Output& MOSI0, QDN_GP
 	: Clk(Clk0)
 	, MOSI(MOSI0)
 	, MISO(MISO0)
+	, clockPolarity(ClockPolarity::IdleLo)
+    , clockPhase(ClockPhase::FirstEdge)
+	, rightShift(1)
 {
 	switch(unit)
 	{
@@ -81,21 +85,19 @@ void QDN_SPI::Init(void)
     spiInitStruct.SPI_Direction = SPI_Direction_2Lines_FullDuplex;
     spiInitStruct.SPI_Mode      = SPI_Mode_Master;
     spiInitStruct.SPI_DataSize  = SPI_DataSize_8b;
-    spiInitStruct.SPI_CPOL      = SPI_CPOL_Low;
-    spiInitStruct.SPI_CPHA      = SPI_CPHA_1Edge;
+    spiInitStruct.SPI_CPOL      = ( clockPolarity == ClockPolarity::IdleHi) ? SPI_CPOL_High  : SPI_CPOL_Low;
+    spiInitStruct.SPI_CPHA      = ( clockPhase == ClockPhase::FirstEdge   ) ? SPI_CPHA_1Edge : SPI_CPHA_2Edge;
     spiInitStruct.SPI_NSS       = SPI_NSS_Soft;
-    spiInitStruct.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_32; //SPI_BaudRatePrescaler_4;
+    uint16_t prescalarMask = (uint16_t)(rightShift - 1) << 3;
+    if (!IS_SPI_BAUDRATE_PRESCALER(prescalarMask)) QDN_Exception();
+    spiInitStruct.SPI_BaudRatePrescaler = prescalarMask;
     spiInitStruct.SPI_FirstBit  = SPI_FirstBit_MSB;
-    spiInitStruct.SPI_CRCPolynomial = 7;
+   // spiInitStruct.SPI_CRCPolynomial = 7;
     SPI_Init(spi, &spiInitStruct);
 
     SPI_Cmd(spi, ENABLE);
-
 }
-void QDN_SPI::SetRate(uint32_t rateHz)
-{
 
-}
 
 uint8_t QDN_SPI::WriteReadU8(uint8_t byte)
 {
@@ -103,11 +105,6 @@ uint8_t QDN_SPI::WriteReadU8(uint8_t byte)
 	while( (spi->SR & SPI_I2S_FLAG_TXE)  ==0 ) ; // wait until TX is empty
 	while( (spi->SR & SPI_I2S_FLAG_RXNE) ==0 ) ; // wait until RX is full
 
-#if 1
-	volatile int i;
-	for(i=0;i<50;i++) {
-	}
-#endif
 	return (uint8_t) spi->DR; //lint !e529
 }
 

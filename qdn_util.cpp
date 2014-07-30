@@ -29,6 +29,7 @@
  **************************************************************************/
 
 #include "qdn_util.h"
+#include "debugbreak.h"
 
 void UnpackUInt16LE(const void* ptr,uint16_t& value) {
     const uint8_t* pu8 = static_cast<const uint8_t*>( ptr );
@@ -57,8 +58,10 @@ void PackUInt32LE( uint32_t value, void* ptr) {
     pu8[3] = (uint8_t)(value & 0xFF);
 }
 
+extern "C"
 void QDN_Exception(const char* message)
 {
-	__builtin_trap();
+//	__builtin_trap();
+	debug_break();
 }
 

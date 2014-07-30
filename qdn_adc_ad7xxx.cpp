@@ -32,16 +32,29 @@
 #include "qdn_spi.h"
 #include "qdn_xos.h"
 
-QDN_ADC_AD7xxx::QDN_ADC_AD7xxx(QDN_SPI& spi0, QDN_GPIO_Output& convst0, QDN_GPIO_Input& busy0)
+QDN_ADC_AD7xxx::QDN_ADC_AD7xxx(QDN_SPI& spi0, QDN_GPIO_Output& convst0, QDN_GPIO_InputN& busy0, uint8_t chainLen0)
     : spi(spi0)
     , convst(convst0)
     , busy(busy0)
+	, chainLen(chainLen0)
 {
 }
 
 void QDN_ADC_AD7xxx::Init(void)
 {
+	convst.Init();
 	convst.Deassert();
+
+	busy.Init();
+	// to do
+	// add interrupt on 'busy' pin to start SPI readout
+
+
+	spi
+		.SetClockRateShift(1)
+	//	.SetClockPolarity(QDN_SPI::ClockPolarity::IdleHi)
+		.SetClockPhase(QDN_SPI::ClockPhase::SecondEdge)
+		.Init();
 }
 
 void QDN_ADC_AD7xxx::Convert(void)
@@ -55,7 +68,7 @@ uint16_t QDN_ADC_AD7xxx::Read(void)
 	convst.Deassert();
 	uint16_t value;
 
-	value = spi.WriteReadU16_BE(0); // this might be Little Endian..
+	value = spi.WriteReadU16_BE(0);
 	return value;
 }
 
@@ -65,4 +78,23 @@ uint16_t QDN_ADC_AD7xxx::ConvertAndRead(void)
 	Convert();
 	XOS_Delay100Ns(22); // from AD7685 datasheet. Tconv >= 2.2 microseconds
 	return Read();
+}
+
+// returns true on success
+bool QDN_ADC_AD7xxx::ChainedConvertAndRead(uint16_t* data)
+{
+	convst.Assert();
+	uint32_t t0 = XOS_GetTime32();
+	while(busy.IsAsserted() && XOS_MillisecondElapsedU32(t0) < 2) ;
+
+	if (busy.IsAsserted())
+	{
+		for(int i=0;i<chainLen;i++)
+		{
+			data[i] = spi.WriteReadU16_BE(0);
+		}
+	}
+	convst.Deassert();
+
+	return !busy.IsAsserted();
 }
