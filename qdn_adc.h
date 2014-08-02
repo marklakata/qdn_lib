@@ -39,7 +39,7 @@ class QDN_ADC_Pin;
 class MyFoo
 {
 public:
-	MyFoo(int unit) {}
+	MyFoo(int ) {}
 };
 
 class QDN_DMA

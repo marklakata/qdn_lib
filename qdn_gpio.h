@@ -45,15 +45,11 @@
 #define MODE_t uint8_t
 #endif
 
-
-class QDN_Pin {
+class QDN_Pin
+{
 protected:
-	QDN_Pin(GPIO_TypeDef* gpio0, int pin0,MODE_t mode0
-			)
-		: gpio(gpio0)
-		, pinMask(1<<pin0)
-		, pinNum(pin0)
-		, mode(mode0)
+	QDN_Pin(GPIO_TypeDef* gpio0, int pin0, MODE_t mode0) :
+			gpio(gpio0), pinMask(1 << pin0), pinNum(pin0), mode(mode0)
 	{
 	}
 public:
@@ -69,28 +65,26 @@ public:
 #endif
 
 protected:
-    GPIO_TypeDef* gpio;
-    uint16_t pinMask;
-    uint8_t pinNum;
+	GPIO_TypeDef* gpio;
+	uint16_t pinMask;
+	uint8_t pinNum;
 
 public:
-    MODE_t mode;
+	MODE_t mode;
 };
 
-class QDN_OutputPin  : public QDN_Pin
+class QDN_OutputPin: public QDN_Pin
 {
 public:
-	QDN_OutputPin(GPIO_TypeDef* gpio0, int pin0,MODE_t mode0,
-			__IO uint32_t& assertReg0,  __IO uint32_t& deassertReg0)
-		: QDN_Pin(gpio0, pin0, mode0)
-		, assertReg(assertReg0)
-		, deassertReg(deassertReg0)
+	QDN_OutputPin(GPIO_TypeDef* gpio0, int pin0, MODE_t mode0,
+	__IO uint32_t& assertReg0, __IO uint32_t& deassertReg0) :
+			QDN_Pin(gpio0, pin0, mode0), assertReg(assertReg0), deassertReg(
+					deassertReg0)
 	{
 	}
-	QDN_OutputPin(bool dummy)
-		: QDN_Pin((GPIO_TypeDef*)0,0,(MODE_t)0)
-		, assertReg(dummyRegister)
-		, deassertReg(dummyRegister)
+	QDN_OutputPin(bool /* dummy*/) :
+			QDN_Pin((GPIO_TypeDef*) 0, 0, (MODE_t) 0), assertReg(dummyRegister), deassertReg(
+					dummyRegister)
 	{
 
 	}
@@ -99,67 +93,68 @@ public:
 	{
 		assertReg = pinMask;
 	}
-    inline void Assert(bool v)
-    {
-    	if (v) Assert(); else Deassert();
-    }
-    inline void Deassert()
-    {
-    	deassertReg = pinMask;
-    }
-    void Toggle();
+	inline void Assert(bool v)
+	{
+		if (v)
+			Assert();
+		else
+			Deassert();
+	}
+	inline void Deassert()
+	{
+		deassertReg = pinMask;
+	}
+	void Toggle();
 
-    bool IsAsserted();
+	bool IsAsserted();
 private:
-    __IO uint32_t& assertReg;
-    __IO uint32_t& deassertReg;
-    static __IO uint32_t dummyRegister;
+	__IO uint32_t& assertReg;__IO uint32_t& deassertReg;
+	static __IO uint32_t dummyRegister;
 };
 
-class QDN_GPIO_Output : public QDN_OutputPin
+class QDN_GPIO_Output: public QDN_OutputPin
 {
 public:
-    QDN_GPIO_Output(GPIO_TypeDef* gpio0, int pin0);
+	QDN_GPIO_Output(GPIO_TypeDef* gpio0, int pin0);
 };
 
-class QDN_GPIO_OutputN : public QDN_OutputPin
+class QDN_GPIO_OutputN: public QDN_OutputPin
 {
 public:
-    QDN_GPIO_OutputN(GPIO_TypeDef* gpio0, int pin0);
+	QDN_GPIO_OutputN(GPIO_TypeDef* gpio0, int pin0);
 };
 
-class QDN_GPIO_OpenDrainN : public QDN_OutputPin
+class QDN_GPIO_OpenDrainN: public QDN_OutputPin
 {
 public:
-    QDN_GPIO_OpenDrainN(GPIO_TypeDef* gpio0, int pin0);
+	QDN_GPIO_OpenDrainN(GPIO_TypeDef* gpio0, int pin0);
 };
 
 ////////////////////////////////////////////////////////////////////
 
-
-class QDN_InputPin : public QDN_Pin
+class QDN_InputPin: public QDN_Pin
 {
 public:
-	QDN_InputPin(GPIO_TypeDef* gpio0, int pin0,MODE_t mode0, uint8_t polarity0)
-		: QDN_Pin(gpio0,pin0,mode0)
-		, polarity(polarity0)
+	QDN_InputPin(GPIO_TypeDef* gpio0, int pin0, MODE_t mode0, uint8_t polarity0) :
+			QDN_Pin(gpio0, pin0, mode0), polarity(polarity0)
 	{
 
 	}
-    bool IsAsserted();
+	bool IsAsserted();
 private:
-    uint8_t polarity;
+	uint8_t polarity;
 };
 
-class QDN_GPIO_Input : public QDN_InputPin
+class QDN_GPIO_Input: public QDN_InputPin
 {
 public:
-    QDN_GPIO_Input(GPIO_TypeDef* gpio0, int pin0);
+	QDN_GPIO_Input(GPIO_TypeDef* gpio0, int pin0);
 };
 
-class QDN_GPIO_InputN : public QDN_InputPin {
+class QDN_GPIO_InputN: public QDN_InputPin
+{
 public:
-    QDN_GPIO_InputN(GPIO_TypeDef* gpio0, int pin0);
+	QDN_GPIO_InputN(GPIO_TypeDef* gpio0, int pin0);
 };
 
 #endif

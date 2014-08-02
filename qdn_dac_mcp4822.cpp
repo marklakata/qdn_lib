@@ -55,7 +55,7 @@ QDN_DAC_MCP4822::QDN_DAC_MCP4822(QDN_SPI& spi0, QDN_GPIO_OutputN& cs0)
 QDN_DAC_MCP4822::QDN_DAC_MCP4822(QDN_SPI& spi0, QDN_GPIO_OutputN& cs0, QDN_OutputPin& ldac0)
 	: spi(spi0)
 	, cs(cs0)
-	, ldac(ldac)
+	, ldac(ldac0)
 	, gainCommand(GAIN_1X)
 
 {

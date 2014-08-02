@@ -83,25 +83,25 @@ uint16_t QDN_ADC_AD7xxx::ConvertAndRead(void)
 // returns true on success
 bool QDN_ADC_AD7xxx::ChainedConvertAndRead(uint16_t* data)
 {
-	volatile uint32_t c00 = DWT->CYCCNT;
+	//volatile uint32_t c00 = DWT->CYCCNT;
 	convst.Assert();
-	volatile uint32_t c01 = DWT->CYCCNT;
+	//volatile uint32_t c01 = DWT->CYCCNT;
 
 	uint32_t t0 = XOS_GetTime32();
-	volatile uint32_t c02 = DWT->CYCCNT;
+	//volatile uint32_t c02 = DWT->CYCCNT;
 	while(busy.IsAsserted() && XOS_MillisecondElapsedU32(t0) < 5) ;
-	volatile uint32_t c03 = DWT->CYCCNT;
-	volatile uint32_t c04 = DWT->CYCCNT;
+	//volatile uint32_t c03 = DWT->CYCCNT;
+	//volatile uint32_t c04 = DWT->CYCCNT;
 
 	if (!busy.IsAsserted())
 	{
 #if 1
-		volatile uint32_t c05 = DWT->CYCCNT;
-		uint32_t c1diff = c01 - c00;
-		uint32_t c2diff = c02 - c00;
-		uint32_t c3diff = c03 - c00;
-		uint32_t c4diff = c04 - c00;
-		uint32_t c5diff = c05 - c00;
+		//volatile uint32_t c05 = DWT->CYCCNT;
+		//volatile uint32_t c1diff = c01 - c00;
+		//volatile uint32_t c2diff = c02 - c00;
+		//volatile uint32_t c3diff = c03 - c00;
+		//volatile uint32_t c4diff = c04 - c00;
+		//volatile uint32_t c5diff = c05 - c00;
 		data[0] = spi.WriteReadU16_BE(0);
 		data[1] = spi.WriteReadU16_BE(0);
 #else

@@ -450,8 +450,7 @@ private:
             ParamOverride_t poverride;
             MemoryAddress_t scanAddress;
             ParamIndex_t count = 0;
-            uint8_t eraseOld = 0;
-            MemoryAddress_t staleAddress;
+            MemoryAddress_t staleAddress = 0;
             uint8_t watchdogCounter = 0;
         
             // find any old references, and invalidate them
@@ -477,10 +476,10 @@ private:
                     break;
                 case ParamOverride_t::COMMAND_COOKIE :
                     if (poverride.index == num) {
-                        if (eraseOld) {     // wow, we've seen this before! this must be a result of junk, so kill it now.
+                        if (staleAddress) {     // wow, we've seen this before! this must be a result of junk, so kill it now.
                             poverride.Zero(staleAddress);
                         }
-                        eraseOld = 1; // don't kill it yet, since we want to write the new value in first
+                        // don't kill it yet, since we want to write the new value in first
                         staleAddress = scanAddress;
                     }
                     break;
@@ -507,7 +506,7 @@ private:
                 paramNextDefinitionAddress += sizeof(ParamOverride_t);
             }
     
-            if  (eraseOld) {
+            if  (staleAddress) {
                 poverride.Zero(staleAddress);
             }
         }
@@ -542,8 +541,13 @@ extern "C"  void QDN_ParamSetRaw(uint16_t index, int32_t value) {
 }
 
 extern "C"  void QDN_ParamSetFloatRaw(uint16_t index, float value) {
-	int32_t ivalue = *(int32_t*)&value;
-    paramDb.SetParameterRaw(index,ivalue);
+	union
+	{
+		float f32;
+		int32_t i32;
+	} buffer;
+	buffer.f32 = value;
+    paramDb.SetParameterRaw(index,buffer.i32);
 }
 
 extern "C"  void  QDN_ParamSetString(uint16_t firstIndex, uint16_t lastIndex, char* buffer, int32_t length)
@@ -580,8 +584,14 @@ extern "C" int32_t QDN_ParamInt32(uint16_t index) {
 }
 
 extern "C" float QDN_ParamFloat(uint16_t index) {
-    int32_t v= paramDb.ReadParameter(index);
-    return *(float*)&v;
+	union
+	{
+		float f32;
+		int32_t i32;
+	} buffer;
+	buffer.i32 = paramDb.ReadParameter(index);
+
+    return buffer.f32;
 }
 
 extern "C" int QDN_ParamString(uint16_t index, char* buffer, int32_t maxChars) {
