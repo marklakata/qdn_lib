@@ -36,8 +36,14 @@
 #define DAC_CHAN_A  0x0000
 #define DAC_CHAN_B  0x8000
 
-#define OPERATING    0x0100
-#define SHUTDOWN     0x0000
+// mask 0x4000 is don't care
+
+#define GAIN_1X     0x2000
+#define GAIN_2X     0x0000
+
+#define OPERATING   0x1000
+#define SHUTDOWN    0x0000
+
 
 
 QDN_OutputPin noConnect(false);
@@ -64,31 +70,60 @@ QDN_DAC_MCP4822::QDN_DAC_MCP4822(QDN_SPI& spi0, QDN_GPIO_OutputN& cs0, QDN_Outpu
 
 void QDN_DAC_MCP4822::Init(void)
 {
+	cs.Init();
+	ldac.Init();
 	cs.Deassert();
+
+	spi
+		.SetClockRateShift(3)
+		.SetClockPhase(spi.ClockPhase::FirstEdge)
+//		.SetClockPhase(spi.ClockPhase::SecondEdge)
+		.Init();
+
+	SetGain(Gain::Gain1X);
+	SetOutput(Channel::ChannelA,0);
+	SetOutput(Channel::ChannelB,0);
 }
 
 
-int16_t QDN_DAC_MCP4822::SetGain(uint8_t gain)
+
+
+QDN_DAC_MCP4822& QDN_DAC_MCP4822::SetGain(const QDN_DAC_MCP4822::Gain gain)
 {
-	if (gain == 1)
+	if (gain == Gain::Gain1X)
 	{
 		gainCommand = GAIN_1X;
-	} else if (gain ==2) {
+	} else if (gain == Gain::Gain2X) {
 		gainCommand = GAIN_2X;
-	} else {
-		return -1;
 	}
+	return *this;
+}
+
+
+void QDN_DAC_MCP4822::WriteCommand(const uint16_t command)
+{
+	cs.Assert();
+	spi.WriteReadU8((command >> 8) & 0xFF);
+	spi.WriteReadU8(command & 0xFF);
+	cs.Deassert();
+	ldac.Assert();
+	ldac.Deassert();
+}
+
+int16_t QDN_DAC_MCP4822::HighZ(void)
+{
+	WriteCommand(SHUTDOWN);
 	return 0;
 }
 
-int16_t QDN_DAC_MCP4822::Write(uint8_t channel, uint16_t count )
+int16_t QDN_DAC_MCP4822::SetOutput(const QDN_DAC_MCP4822::Channel channel, const uint16_t count )
 {
     uint16_t command = 0;
 
-	if (channel == 0)
+	if (channel == Channel::ChannelA)
 	{
-		command|= DAC_CHAN_A;
-	} else if (channel == 1)
+		command |= DAC_CHAN_A;
+	} else if (channel == Channel::ChannelB)
 	{
 		command |= DAC_CHAN_B;
 	} else {
@@ -101,14 +136,10 @@ int16_t QDN_DAC_MCP4822::Write(uint8_t channel, uint16_t count )
 	}
 
 	command |= gainCommand;
+	command |= OPERATING;
 	command |= count;
 
-	cs.Assert();
-	spi.WriteReadU8((command >> 8) & 0xFF);
-	spi.WriteReadU8(command & 0xFF);
-	cs.Deassert();
-	ldac.Assert();
-	ldac.Deassert();
+	WriteCommand(command);
 
 	return 0;
 }

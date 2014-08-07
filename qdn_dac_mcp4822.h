@@ -46,19 +46,20 @@ public:
 
 	void Init(void);
 
-	/// gain is 1 or 2
-	int16_t SetGain(uint8_t gain);
+	enum class Gain { Gain1X, Gain2X };
+	QDN_DAC_MCP4822& SetGain(const Gain gain);
 
-	/// channel is 0(A) or 1(B). Count is 0 to 0xFFF (12 bit)
-	int16_t Write(uint8_t channel, uint16_t count);
+	/// Count is 0 to 0xFFF (12 bit)
+	enum class Channel { ChannelA, ChannelB };
+	int16_t SetOutput(const Channel channel, const uint16_t count);
+	int16_t HighZ(void);
 
 private:
+	void WriteCommand(const uint16_t command);
+
 	QDN_SPI& spi;
 	QDN_GPIO_OutputN& cs;
 	QDN_OutputPin& ldac;
-
-#define GAIN_1X     0x0200
-#define GAIN_2X     0x0000
 
 	uint16_t gainCommand;
 };
