@@ -185,7 +185,7 @@ USART_Helper_t QDN_USART_Init(USART_TypeDef* USARTx, USART_InitTypeDef* USART_In
 void QDN_SerialPortEnable( ComPortHandle_t* port ) {
     if (port->txPin != 0) {
 #ifdef STM32F10X_XL
-    	port->txPin->mode = GPIO_Mode_AF_PP;
+    	port->txPin->SetMode(GPIO_Mode_AF_PP);
 #else
 #error
         GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
@@ -198,7 +198,7 @@ void QDN_SerialPortEnable( ComPortHandle_t* port ) {
     
     if (port->rxPin !=0 ){
 #ifdef STM32F10X_XL
-    	port->rxPin->mode = GPIO_Mode_IPU;
+    	port->rxPin->SetMode(GPIO_Mode_IPU);
 #else
 #error
         GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
@@ -209,7 +209,7 @@ void QDN_SerialPortEnable( ComPortHandle_t* port ) {
 
     if (port->rtsPin !=0 ){
 #ifdef STM32F10X_XL
-    	port->rtsPin->mode = SOFTWARE_RTS ? GPIO_Mode_Out_PP : GPIO_Mode_AF_PP;
+    	port->rtsPin->SetMode(SOFTWARE_RTS ? GPIO_Mode_Out_PP : GPIO_Mode_AF_PP);
 #else
 #error
         GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
@@ -228,7 +228,7 @@ void QDN_SerialPortEnable( ComPortHandle_t* port ) {
     }
 
     if (port->ctsPin !=0 ){
-    	port->ctsPin->mode = GPIO_Mode_IN_FLOATING;
+    	port->ctsPin->SetMode( GPIO_Mode_IN_FLOATING);
 //        GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
  //       GPIO_InitStructure.GPIO_Pin = (1<<port->ctsPin_);
  //       GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;

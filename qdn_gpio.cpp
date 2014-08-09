@@ -81,6 +81,19 @@ void  QDN_Pin::HighSpeedInit() {
 		QDN_GPIO_Init(gpio, &GPIO_InitStructure);
 	}
 }
+
+const QDN_Pin::Port QDN_Pin::GetPort()
+{
+#ifdef STM32F10X_XL
+	int offset = gpio - GPIOA;
+	offset >>= 10;
+	offset ++;
+	return static_cast<Port>(offset);
+#else
+#error
+#endif
+}
+
 //////////////////
 
 __IO uint32_t QDN_OutputPin::dummyRegister = 0;

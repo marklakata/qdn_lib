@@ -61,15 +61,27 @@ public:
 	{
 		GPIO_PinAFConfig(gpio, pinNum, altFunc);
 	}
-
 #endif
 
+	enum class Port { A=1, B=2, C=3, D=4, E=5, F=6, G=7, H=8};
+	constexpr inline static uint16_t PinHash(const Port port, const int pin)
+	{
+	return (static_cast<uint16_t>(port) << 8) | pin;
+	}
+	uint16_t GetPinHash()
+	{
+		return (static_cast<int>(GetPort())<< 8) | pinNum;
+	}
+	const Port GetPort();
+	const GPIO_TypeDef* GetGPIO() { return gpio;}
+	const int GetPinNum() { return pinNum;}
+	void SetMode(MODE_t mode0) { mode = mode0; }
 protected:
 	GPIO_TypeDef* gpio;
 	uint16_t pinMask;
 	uint8_t pinNum;
 
-public:
+protected:
 	MODE_t mode;
 };
 

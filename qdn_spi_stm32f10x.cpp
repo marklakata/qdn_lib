@@ -62,9 +62,9 @@ QDN_SPI::QDN_SPI(int unit, QDN_GPIO_Output& Clk0, QDN_GPIO_Output& MOSI0, QDN_GP
 	default: QDN_Exception(); break;
 	}
 
-	Clk.mode = GPIO_Mode_AF_PP;
-	MOSI.mode = GPIO_Mode_AF_PP;
-	MISO.mode = GPIO_Mode_AF_PP;
+	Clk.SetMode(GPIO_Mode_AF_PP);
+	MOSI.SetMode( GPIO_Mode_AF_PP);
+	MISO.SetMode( GPIO_Mode_AF_PP);
 }
 
 void QDN_SPI::Init(void)
