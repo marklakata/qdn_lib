@@ -85,7 +85,7 @@ void  QDN_Pin::HighSpeedInit() {
 const QDN_Pin::Port QDN_Pin::GetPort()
 {
 #ifdef STM32F10X_XL
-	int offset = gpio - GPIOA;
+	uint32_t offset = reinterpret_cast<uint32_t>(gpio) - reinterpret_cast<uint32_t>(GPIOA);
 	offset >>= 10;
 	offset ++;
 	return static_cast<Port>(offset);
@@ -230,3 +230,105 @@ QDN_GPIO_InputN::QDN_GPIO_InputN(GPIO_TypeDef* gpio0, int pin0)
   GPIO_Mode_AF_OD = 0x1C,
   GPIO_Mode_AF_PP = 0x18
 */
+
+///////////////////////////////////////////////////////////////////
+
+QDN_ExternalInterrupt::QDN_ExternalInterrupt(GPIO_TypeDef* gpio0, int pin0)
+: QDN_InputPin(gpio0,pin0, GPIO_Mode_IN_FLOATING,1)
+{
+
+}
+
+static ISR_t ext0_IRQHandler;
+static ISR_t ext1_IRQHandler;
+static ISR_t ext2_IRQHandler;
+static ISR_t ext3_IRQHandler;
+static ISR_t ext4_IRQHandler;
+
+QDN_ExternalInterrupt& QDN_ExternalInterrupt::SetCallback(ISR_t callback)
+{
+    ext0_IRQHandler = callback;
+    return *this;
+}
+
+void QDN_ExternalInterrupt::Init()
+{
+    QDN_Pin::Init();
+
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
+    QDN_Pin::Port port = GetPort();
+    uint8_t portSource = static_cast<int>(port) - 1;
+    GPIO_EXTILineConfig(portSource, pinNum);
+
+    EXTI_InitTypeDef   EXTI_InitStructure;
+    EXTI_InitStructure.EXTI_Line    = pinMask;
+    EXTI_InitStructure.EXTI_Mode    = EXTI_Mode_Interrupt;
+    EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising;
+    EXTI_InitStructure.EXTI_LineCmd = ENABLE;
+    EXTI_Init(&EXTI_InitStructure);
+
+    NVIC_InitTypeDef   NVIC_InitStructure;
+    NVIC_InitStructure.NVIC_IRQChannel                   = EXTI0_IRQn + pinNum;
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = NVIC_PRIORITY_DEFAULT;
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority        = 0x0F;
+    NVIC_InitStructure.NVIC_IRQChannelCmd                = ENABLE;
+    NVIC_Init(&NVIC_InitStructure);
+}
+
+void QDN_ExternalInterrupt::Enable()
+{
+    EXTI->RTSR |= pinMask;
+}
+
+void QDN_ExternalInterrupt::Disable()
+{
+    EXTI->RTSR &= ~pinMask;
+}
+
+extern "C" void EXTI0_IRQHandler()
+{
+    if ((EXTI->PR & EXTI_Line0)  && (EXTI->IMR & EXTI_Line0))
+    {
+        ext0_IRQHandler();
+        EXTI->PR = EXTI_Line0;
+    }
+}
+
+extern "C" void EXTI1_IRQHandler()
+{
+    if(EXTI_GetITStatus(EXTI_Line1) != RESET)
+    {
+        ext1_IRQHandler();
+
+        EXTI_ClearITPendingBit(EXTI_Line1);
+    }
+}
+extern "C" void EXTI2_IRQHandler()
+{
+    if(EXTI_GetITStatus(EXTI_Line2) != RESET)
+    {
+        ext2_IRQHandler();
+
+        EXTI_ClearITPendingBit(EXTI_Line2);
+    }
+}
+extern "C" void EXTI3_IRQHandler()
+{
+    if(EXTI_GetITStatus(EXTI_Line3) != RESET)
+    {
+        ext3_IRQHandler();
+
+        EXTI_ClearITPendingBit(EXTI_Line3);
+    }
+}
+extern "C" void EXTI4_IRQHandler()
+{
+    if(EXTI_GetITStatus(EXTI_Line4) != RESET)
+    {
+        ext4_IRQHandler();
+
+        EXTI_ClearITPendingBit(EXTI_Line4);
+    }
+}
+
+

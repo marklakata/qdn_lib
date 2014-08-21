@@ -46,5 +46,7 @@ extern "C" void QDN_Exception(const char* message = "");
 void QDN_Exception(const char* message );
 #endif
 
+typedef void (*ISR_t)(void);
+
 #endif
 

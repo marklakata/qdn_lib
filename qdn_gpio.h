@@ -31,6 +31,8 @@
 #ifndef _QDN_GPIO_H_
 #define _QDN_GPIO_H_
 
+#include "qdn_util.h"
+
 #ifdef STM32F10X_XL
 #include "qdn_stm32f10x.h"
 #include "stm32f10x_gpio.h"
@@ -168,5 +170,17 @@ class QDN_GPIO_InputN: public QDN_InputPin
 public:
 	QDN_GPIO_InputN(GPIO_TypeDef* gpio0, int pin0);
 };
+
+
+class QDN_ExternalInterrupt : public QDN_InputPin
+{
+public:
+	QDN_ExternalInterrupt(GPIO_TypeDef* gpio0, int pin0);
+	QDN_ExternalInterrupt& SetCallback(ISR_t callback);
+	void Enable();
+	void Disable();
+	void Init();
+};
+
 
 #endif

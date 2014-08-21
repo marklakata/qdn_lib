@@ -54,6 +54,13 @@ protected:
 #error
 #endif
 	void Init();
+	void SetFrequencyHerz(float freq);
+    void SetCallback(void (*function)(void));
+public:
+    void Start();
+    void Stop();
+
+protected:
 #ifdef STM32F10X_XL
 	TIM_TimeBaseInitTypeDef baseInit;
 	TIM_OCInitTypeDef outputControl;
@@ -68,7 +75,9 @@ public:
 	QDN_EventGenerator(int timerId);
 	QDN_EventGenerator(int timerId, void (*function0)(void));
 	void Init();
-	QDN_EventGenerator& SetFrequencyHerz(float freq);
+	QDN_EventGenerator& SetFrequencyHerz(float freq)        { QDN_Timer::SetFrequencyHerz(freq); return *this; }
+	QDN_EventGenerator& SetCallback(void (*function)(void)) { QDN_Timer::SetCallback(function); return * this; }
+	void Start(void);
 private:
 	void (*function)(void);
 };
@@ -80,12 +89,10 @@ public:
 	QDN_PulseGenerator(int timerId, QDN_OutputPin& output);
 	void Init();
 	QDN_PulseGenerator& SetDutyCycle(uint32_t onCounts, uint32_t offCounts);
-	QDN_PulseGenerator& SetFrequencyHerz(float freq);
+	QDN_PulseGenerator& SetFrequencyHerz(float freq) { QDN_Timer::SetFrequencyHerz(freq); return *this; }
 	QDN_PulseGenerator& SetDutyCycle(float fraction);  // fraction of time that output is asserted
 	QDN_PulseGenerator& SetRisingEdgeCallback(void (*func)(void));  // fraction of time that output is asserted
 	QDN_PulseGenerator& SetFallingEdgeCallback(void (*func)(void));  // fraction of time that output is asserted
-	void Start();
-	void Stop();
 private:
 	QDN_OutputPin& outputPin;
 

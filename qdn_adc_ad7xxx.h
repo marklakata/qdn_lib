@@ -41,24 +41,47 @@
 class QDN_SPI;
 class QDN_GPIO_Output;
 class QDN_GPIO_InputN;
+class QDN_InputPin;
 
 class QDN_ADC_AD7xxx
 {
 public:
-	QDN_ADC_AD7xxx(QDN_SPI& spi, QDN_GPIO_Output& convst, QDN_GPIO_InputN& busy, uint8_t chainLen0 = 1);
+	QDN_ADC_AD7xxx(QDN_SPI& spi, QDN_GPIO_Output& convst);
 	void Init(void);
 
 	void Convert(void);
 	uint16_t Read(void);
 	uint16_t ConvertAndRead(void);
-	bool     ChainedConvertAndRead(uint16_t* data);
 
-private:
+protected:
 	QDN_SPI&          spi;
 	QDN_GPIO_Output&  convst;
-	QDN_GPIO_InputN&  busy;
-	uint8_t chainLen;
 };
 
+template<int ChainLen>
+class QDN_ChainedADC_AD7xxx : public QDN_ADC_AD7xxx
+{
+public:
+    QDN_ChainedADC_AD7xxx(QDN_SPI& spi, QDN_GPIO_Output& convst, QDN_GPIO_InputN& busy0)
+        : QDN_ADC_AD7xxx(spi,convst)
+        , busy(busy0)
+    {
+    }
 
+    bool  ChainedConvertAndRead(uint16_t* data);
+    bool  Read(uint16_t* data);
+    QDN_GPIO_InputN&  busy;
+};
+
+template<int ChainLen>
+class QDN_AsyncChainedADC_AD7xxx : public QDN_ADC_AD7xxx
+{
+public:
+    QDN_AsyncChainedADC_AD7xxx(QDN_SPI& spi, QDN_GPIO_Output& convst)
+		: QDN_ADC_AD7xxx(spi,convst)
+	{
+	}
+
+    void Read(uint16_t* data);
+};
 #endif

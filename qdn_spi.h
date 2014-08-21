@@ -35,6 +35,7 @@
 
 class QDN_GPIO_Output;
 class QDN_GPIO_Input;
+class QDN_DMA;
 
 struct SpiThing;
 
@@ -54,7 +55,12 @@ public:
 	uint8_t  WriteReadU8(uint8_t byte);
 	uint16_t WriteReadU16_LE(uint16_t word);
 	uint16_t WriteReadU16_BE(uint16_t word);
+
+	void EnableDMA(void);
+
 private:
+    friend QDN_DMA;
+
 	QDN_GPIO_Output& Clk;
 	QDN_GPIO_Output& MOSI;
 	QDN_GPIO_Input& MISO;

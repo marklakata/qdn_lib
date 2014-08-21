@@ -31,78 +31,22 @@
 #include <stdarg.h>
 
 #include "qdn_adc.h"
+#include "qdn_spi.h"
 #include "qdn_gpio.h"
 #include "qdn_util.h"
+#include "qdn_dma.h"
 
 #include "misc.h"
 #include "qdn_stm32f10x.h"
 #include "stm32f10x_adc.h"
 #include "stm32f10x_dma.h"
 
+#include "qdn_stm32f10x.h"
+
+
+
 
 #if 1
-// fix me
-// this should be part of the project config
-#define NVIC_PRIORITY_DMA 1
-#endif
-
-
-QDN_DMA::QDN_DMA(int unit, int channel)
-{
-#if 1
-	if (unit == 1) {
-		dma = DMA1;
-		if (channel == 1) dmaChannel = DMA1_Channel1;
-		else QDN_Exception();
-	}
-	else if (unit == 2) {
-		dma = DMA2;
-		QDN_Exception();
-	}
-	else QDN_Exception();
-#endif
-}
-
-#if 1
-void QDN_DMA::Init()
-{
-	if (dma == DMA1)
-	{
-	    RCC->AHBENR |= RCC_AHBPeriph_DMA1;
-	}
-	else if (dma == DMA2)
-	{
-	    RCC->AHBENR |= RCC_AHBPeriph_DMA1;
-	} else {
-		QDN_Exception();
-	}
-}
-
-void QDN_DMA::SetADCtoMem(QDN_ADC& adc, volatile uint16_t* dst, uint32_t size)
-{
-	DMA_InitTypeDef DMA_InitStructure;
-
-	DMA_DeInit(dmaChannel);
-	DMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t) &adc.adc->DR;
-	DMA_InitStructure.DMA_MemoryBaseAddr     = (uint32_t) dst;
-	DMA_InitStructure.DMA_DIR                = DMA_DIR_PeripheralSRC;
-	DMA_InitStructure.DMA_PeripheralInc      = DMA_PeripheralInc_Disable;
-	DMA_InitStructure.DMA_MemoryInc          = DMA_MemoryInc_Enable;
-	DMA_InitStructure.DMA_Priority           = DMA_Priority_Low;
-	DMA_InitStructure.DMA_M2M                = DMA_M2M_Disable;
-	DMA_InitStructure.DMA_BufferSize         = size;
-	DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Word;
-	DMA_InitStructure.DMA_MemoryDataSize     = DMA_MemoryDataSize_HalfWord; //DMA_MemoryDataSize_Word;
-	DMA_InitStructure.DMA_Mode               = DMA_Mode_Circular; // DMA_Mode_Normal;
-
-	DMA_Init(dmaChannel, &DMA_InitStructure);
-}
-
-void QDN_DMA::Enable()
-{
-	DMA_Cmd(dmaChannel, ENABLE);
-}
-
 QDN_ADC_Pin::QDN_ADC_Pin(GPIO_TypeDef* gpio0, int pin0, QDN_ADC& adc0)
 #ifdef STM32F10X_XL
 : QDN_Pin(gpio0, pin0, GPIO_Mode_AIN)
@@ -188,27 +132,15 @@ QDN_ADC::QDN_ADC(int unit)
 	}
 }
 
-extern "C"
-void DMA1_Channel1_IRQHandler(void);
 
 uint32_t dma1_1Done = 0;
-extern "C"
-void DMA1_Channel1_IRQHandler(void)
+static void dmaDone(void)
 {
 	dma1_1Done++;
 }
 
 void QDN_ADC::DMA_Configure(QDN_DMA& dma, volatile uint16_t* destinationPtr, /*QDN_ADC_Pin, QDN_ADC_Pin,*/...)
 {
-#if 1
-	dma.Init();
-
-    NVIC_InitTypeDef NVIC_InitStructure;
-    NVIC_InitStructure.NVIC_IRQChannel = DMA1_Channel1_IRQn;
-    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = NVIC_PRIORITY_DMA;
-    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;
-    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-    NVIC_Init(&NVIC_InitStructure);
 
 //    ADC_TempSensorVrefintCmd(ENABLE);
 
@@ -224,7 +156,10 @@ void QDN_ADC::DMA_Configure(QDN_DMA& dma, volatile uint16_t* destinationPtr, /*Q
         channels[numChannels++] = channel;
     } while (1);
 
-    dma.SetADCtoMem(*this,destinationPtr,numChannels);
+    dma
+        .SetMemory(destinationPtr,numChannels)
+//      .SetCallback(dmaDone);
+        .Init();
 
     ADC_InitTypeDef ADC_InitStructure;
     ADC_InitStructure.ADC_Mode               = ADC_Mode_Independent;
@@ -245,10 +180,6 @@ void QDN_ADC::DMA_Configure(QDN_DMA& dma, volatile uint16_t* destinationPtr, /*Q
     ADC_SoftwareStartConvCmd(adc, ENABLE);
     va_end(channelList);
 
-
-    // then enable interrupts on the DMA channel
-    dma.dmaChannel->CCR |=  DMA_CCR1_TCIE ;
-#endif
 }
 
 void QDN_ADC::EnableAndCalibrate()

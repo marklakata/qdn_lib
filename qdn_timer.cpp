@@ -43,22 +43,37 @@ QDN_Timer::QDN_Timer()
 : timer(0)
 , channel(0)
 {
-
+    TIM_TimeBaseStructInit(&baseInit);
 }
+
 QDN_Timer::QDN_Timer(int timerId)
 {
-	if (timerId == 1)
+	switch (timerId)
 	{
-		timer = TIM1;
+	case 1: timer = TIM1; break;
+    case 2: timer = TIM2; break;
+    case 3: timer = TIM3; break;
+    case 4: timer = TIM4; break;
+    case 5: timer = TIM5; break;
+    case 6: timer = TIM6; break;
+    case 7: timer = TIM7; break;
+    case 8: timer = TIM8; break;
+    case 9: timer = TIM9; break;
 	}
+	channel = 0;
+
+    TIM_TimeBaseStructInit(&baseInit);
 }
 
 
-#define CASE(x) case reinterpret_cast<uint32_t>(x)
 
 void QDN_Timer::Init()
 {
-	switch((uint32_t)timer)
+    RCC_APB2PeriphClockCmd( RCC_APB2Periph_AFIO, ENABLE);
+
+
+#define CASE(x) case reinterpret_cast<uint32_t>(x)
+    switch((uint32_t)timer)
 	{
 	CASE (TIM1): RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM1, ENABLE); break;
 	CASE (TIM2): RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE); break;
@@ -72,9 +87,71 @@ void QDN_Timer::Init()
 	default:
 		QDN_Exception("not supported");
 	}
+#undef CASE
+
+    TIM_DeInit(timer); // aka reset periph after the clock is enabled.
 }
 
+void QDN_Timer::SetFrequencyHerz(float freq)
+{
+    RCC_ClocksTypeDef RCC_Clocks;
+    RCC_GetClocksFreq(&RCC_Clocks);
+
+    uint32_t prescaler = 1;
+    double period;
+    do {
+        period = RCC_Clocks.SYSCLK_Frequency/prescaler/freq;
+        baseInit.TIM_Period = static_cast<int>(period + 0.5) - 1;
+        baseInit.TIM_Prescaler = (prescaler-1);
+        prescaler *= 2;
+    } while (period >= 65536) ;
+}
+
+void QDN_Timer::Start()
+{
+    timer->CR1 |= TIM_CR1_CEN;
+}
+
+void QDN_Timer::Stop()
+{
+    timer->CR1 &= (uint16_t)(~((uint16_t)TIM_CR1_CEN));
+}
+
+
+
+typedef void (*ISR_t)(void);
+
+extern "C"
+void QDN_NotDefinedException(void)
+{
+    QDN_Exception("timer callback not defined");
+}
+
+
+ISR_t tim2Callback = QDN_NotDefinedException;
+ISR_t tim3Callback = QDN_NotDefinedException;
+ISR_t tim4Callback = QDN_NotDefinedException;
+ISR_t tim5Callback = QDN_NotDefinedException;
+ISR_t tim6Callback = QDN_NotDefinedException;
+ISR_t tim7Callback = QDN_NotDefinedException;
+
+void QDN_Timer::SetCallback(void (*function)(void))
+{
+#define CASE(x) case reinterpret_cast<uint32_t>(x)
+	switch((uint32_t)timer)
+	{
+	CASE (TIM2): tim2Callback = function; break;
+	CASE (TIM3): tim3Callback = function; break;
+	CASE (TIM4): tim4Callback = function; break;
+	CASE (TIM5): tim5Callback = function; break;
+	CASE (TIM6): tim6Callback = function; break;
+	CASE (TIM7): tim7Callback = function; break;
+	default:
+		QDN_Exception("not supported");
+	}
 #undef CASE
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -96,7 +173,6 @@ QDN_PulseGenerator::QDN_PulseGenerator(QDN_OutputPin& output)
 	: QDN_Timer()
     , outputPin(output)
 {
-	TIM_TimeBaseStructInit(&baseInit);
 	baseInit.TIM_CounterMode = TIM_CounterMode_Up;
 
 	TIM_OCStructInit(&outputControl);
@@ -149,20 +225,17 @@ QDN_PulseGenerator::QDN_PulseGenerator(QDN_OutputPin& output)
 void QDN_PulseGenerator::Init()
 {
 	QDN_Timer::Init();
+
 	outputPin.SetMode(GPIO_Mode_AF_PP);
 //	outputPin.SetAltFunction();
 //	  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 
 	outputPin.Init();
 
-	RCC_APB2PeriphClockCmd( RCC_APB2Periph_AFIO, ENABLE);
-
-	TIM_DeInit(timer);
 
 //    TIM_TimeBaseStructure.TIM_ClockDivision = 0;
 //	baseInit.TIM_RepetitionCounter = ?;
 	TIM_TimeBaseInit(timer, &baseInit);
-
 
 	if (channel == 1) {
 		TIM_OC1Init(timer,&outputControl);
@@ -189,24 +262,10 @@ void QDN_PulseGenerator::Init()
 
 QDN_PulseGenerator& QDN_PulseGenerator::SetDutyCycle(uint32_t onCounts, uint32_t offCounts)
 {
-	return *this;
+    QDN_Exception("not implemented");
+    return *this;
 }
 
-QDN_PulseGenerator& QDN_PulseGenerator::SetFrequencyHerz(float freq)
-{
-	RCC_ClocksTypeDef RCC_Clocks;
-	RCC_GetClocksFreq(&RCC_Clocks);
-
-	uint32_t prescaler = 1;
-	double period;
-	do {
-        period = RCC_Clocks.SYSCLK_Frequency/prescaler/freq;
-	    baseInit.TIM_Period = static_cast<int>(period + 0.5) - 1;
-	    baseInit.TIM_Prescaler = (prescaler-1);
-	    prescaler *= 2;
-	} while (period >= 65536) ;
-	return *this;
-}
 
 QDN_PulseGenerator& QDN_PulseGenerator::SetDutyCycle(float fraction)
 {
@@ -214,35 +273,54 @@ QDN_PulseGenerator& QDN_PulseGenerator::SetDutyCycle(float fraction)
 	return *this;
 }
 
-void QDN_PulseGenerator::Start()
-{
-	timer->CR1 |= TIM_CR1_CEN;
-}
-
-void QDN_PulseGenerator::Stop()
-{
-    timer->CR1 &= (uint16_t)(~((uint16_t)TIM_CR1_CEN));
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 
 QDN_EventGenerator::QDN_EventGenerator(int timerId)
+    : QDN_Timer(timerId)
 {
 }
 
 QDN_EventGenerator::QDN_EventGenerator(int timerId, void (*function0)(void))
-: function(function0)
+    : QDN_Timer(timerId)
+    , function(function0)
 {
 }
 
 void QDN_EventGenerator::Init()
 {
-	QDN_Exception("not supported");
+    QDN_Timer::Init();
+    TIM_TimeBaseInit(timer, &baseInit);
+
+    NVIC_InitTypeDef NVIC_InitStructure;
+#define CASE(x) case reinterpret_cast<uint32_t>(x)
+    switch((uint32_t)timer)
+    {
+    CASE (TIM2): NVIC_InitStructure.NVIC_IRQChannel =  TIM2_IRQn; break;
+    CASE (TIM3): NVIC_InitStructure.NVIC_IRQChannel =  TIM3_IRQn; break;
+    CASE (TIM4): NVIC_InitStructure.NVIC_IRQChannel =  TIM4_IRQn; break;
+    CASE (TIM5): NVIC_InitStructure.NVIC_IRQChannel =  TIM5_IRQn; break;
+    CASE (TIM6): NVIC_InitStructure.NVIC_IRQChannel =  TIM6_IRQn; break;
+    CASE (TIM7): NVIC_InitStructure.NVIC_IRQChannel =  TIM7_IRQn; break;
+    default:
+        QDN_Exception("not supported");
+    }
+#undef CASE
+
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = NVIC_PRIORITY_DEFAULT;
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;
+    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+    NVIC_Init(&NVIC_InitStructure);
 }
 
-QDN_EventGenerator& QDN_EventGenerator::SetFrequencyHerz(float freq)
+void QDN_EventGenerator::Start()
 {
-	return *this;
+    QDN_Timer::Start();
+    TIM_ITConfig(timer, TIM_IT_Update, ENABLE);
+
+#if 0
+    TIM_GenerateEvent(timer,TIM_EventSource_Update);
+#endif
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -256,24 +334,35 @@ extern "C" void TIM7_IRQHandler(void);
 
 extern "C" void TIM2_IRQHandler(void)
 {
+    TIM2->SR &= ~TIM_FLAG_Update;
+	tim2Callback();
 }
 
 extern "C" void TIM3_IRQHandler(void)
 {
+    TIM3->SR &= ~TIM_FLAG_Update;
+	tim3Callback();
 }
 extern "C" void TIM4_IRQHandler(void)
 {
+    TIM4->SR &= ~TIM_FLAG_Update;
+	tim4Callback();
 }
 extern "C" void TIM5_IRQHandler(void)
 {
+    TIM5->SR &= ~TIM_FLAG_Update;
+	tim5Callback();
 }
 extern "C" void TIM6_IRQHandler(void)
 {
+    TIM6->SR &= ~TIM_FLAG_Update;
+	tim6Callback();
 }
 extern "C" void TIM7_IRQHandler(void)
 {
+    TIM7->SR &= ~TIM_FLAG_Update;
+	tim7Callback();
 }
-
 
 //TIM1_BRK_TIM9_IRQHandler
 //TIM1_UP_TIM10_IRQHandler

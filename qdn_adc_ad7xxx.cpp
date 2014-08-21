@@ -32,11 +32,9 @@
 #include "qdn_spi.h"
 #include "qdn_xos.h"
 
-QDN_ADC_AD7xxx::QDN_ADC_AD7xxx(QDN_SPI& spi0, QDN_GPIO_Output& convst0, QDN_GPIO_InputN& busy0, uint8_t chainLen0)
+QDN_ADC_AD7xxx::QDN_ADC_AD7xxx(QDN_SPI& spi0, QDN_GPIO_Output& convst0)
     : spi(spi0)
     , convst(convst0)
-    , busy(busy0)
-	, chainLen(chainLen0)
 {
 }
 
@@ -45,7 +43,9 @@ void QDN_ADC_AD7xxx::Init(void)
 	convst.HighSpeedInit();
 	convst.Deassert();
 
+#if 0
 	busy.HighSpeedInit();
+#endif
 	// to do
 	// add interrupt on 'busy' pin to start SPI readout
 
@@ -81,37 +81,28 @@ uint16_t QDN_ADC_AD7xxx::ConvertAndRead(void)
 }
 
 // returns true on success
-bool QDN_ADC_AD7xxx::ChainedConvertAndRead(uint16_t* data)
+template<>
+bool QDN_ChainedADC_AD7xxx<2>::ChainedConvertAndRead(uint16_t* data)
 {
-	//volatile uint32_t c00 = DWT->CYCCNT;
 	convst.Assert();
-	//volatile uint32_t c01 = DWT->CYCCNT;
 
 	uint32_t t0 = XOS_GetTime32();
-	//volatile uint32_t c02 = DWT->CYCCNT;
 	while(busy.IsAsserted() && XOS_MillisecondElapsedU32(t0) < 5) ;
-	//volatile uint32_t c03 = DWT->CYCCNT;
-	//volatile uint32_t c04 = DWT->CYCCNT;
 
 	if (!busy.IsAsserted())
 	{
-#if 1
-		//volatile uint32_t c05 = DWT->CYCCNT;
-		//volatile uint32_t c1diff = c01 - c00;
-		//volatile uint32_t c2diff = c02 - c00;
-		//volatile uint32_t c3diff = c03 - c00;
-		//volatile uint32_t c4diff = c04 - c00;
-		//volatile uint32_t c5diff = c05 - c00;
 		data[0] = spi.WriteReadU16_BE(0);
 		data[1] = spi.WriteReadU16_BE(0);
-#else
-		for(int i=0;i<chainLen;i++)
-		{
-			data[i] = spi.WriteReadU16_BE(0);
-		}
-#endif
 	}
 	convst.Deassert();
 
 	return !busy.IsAsserted();
+}
+
+// returns true on success
+template<>
+void QDN_AsyncChainedADC_AD7xxx<2>::Read(uint16_t* data)
+{
+    data[0] = spi.WriteReadU16_BE(0);
+    data[1] = spi.WriteReadU16_BE(0);
 }

@@ -28,6 +28,9 @@
  * either expressed or implied, of the FreeBSD Project.
  **************************************************************************/
 
+#ifndef _QDN_STM32F10x_H_
+#define _QDN_STM32F10x_H_
+
 #include "stm32f10x_gpio.h"
 #include "stm32f10x_usart.h"
 
@@ -55,3 +58,19 @@ uint8_t QDN_RTC_GetBinaryTimeStamp(struct QDN_RTC_DateTime_s* pTimestamp);
 void    QDN_GetShortASCIITimeStamp(char* string, int len);
 
 QDN_END_EXTERN_C
+
+#ifdef __cplusplus
+struct SpiThing : public SPI_TypeDef
+{
+};
+#endif
+
+#if 1
+// fixme
+// this should be part of the project config
+#define NVIC_PRIORITY_DEFAULT 1
+#endif
+
+
+#endif
+

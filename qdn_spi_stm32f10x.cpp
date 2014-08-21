@@ -33,17 +33,7 @@
 #include "qdn_util.h"
 #include "stm32f10x_spi.h"
 #include "stm32f10x_rcc.h"
-
-#if 1
-struct SpiThing : public SPI_TypeDef
-{
-
-};
-#else
-struct SpiThing {
-	SPI_TypeDef spi;
-};
-#endif
+#include "qdn_stm32f10x.h"
 
 
 QDN_SPI::QDN_SPI(int unit, QDN_GPIO_Output& Clk0, QDN_GPIO_Output& MOSI0, QDN_GPIO_Input& MISO0)
@@ -125,4 +115,9 @@ uint16_t QDN_SPI::WriteReadU16_BE(uint16_t word)
 	result =  (static_cast<uint16_t>(WriteReadU8(word >> 8)) << 8);
 	result |= WriteReadU8(word & 0xFF);
 	return result;
+}
+
+void QDN_SPI::EnableDMA(void)
+{
+    SPI_I2S_DMACmd(spi, SPI_I2S_DMAReq_Rx | SPI_I2S_DMAReq_Tx, ENABLE);
 }
