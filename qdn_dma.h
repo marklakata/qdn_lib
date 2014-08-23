@@ -44,9 +44,11 @@ public:
 #if 1
     void Init();
     QDN_DMA& SetCallback(ISR_t callback);
-    QDN_DMA& SetMemory(volatile uint16_t* dst, uint32_t size);
+    QDN_DMA& SetMemory(volatile uint16_t* dst, uint32_t numTransfers, uint32_t unitSize);
     void Enable();
     void DisableAndRearm();
+    void DisableAndRearm(void* dest);
+
 private:
     friend QDN_ADC;
     DMA_TypeDef* dma;

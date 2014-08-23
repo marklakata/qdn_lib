@@ -167,7 +167,7 @@ USART_Helper_t QDN_USART_Init(USART_TypeDef* USARTx, USART_InitTypeDef* USART_In
     case UART5_BASE:  mask = RCC_APB1Periph_UART5;  bus = 1; helper.irqn = UART5_IRQn ; helper.altFunc = GPIO_AF_UART5; break;
     case USART6_BASE: mask = RCC_APB2Periph_USART6; bus = 2; helper.irqn = USART6_IRQn; helper.altFunc = GPIO_AF_USART6; break;
 #endif
-    default: bus = 0; break;
+    default: QDN_Exception("not supported"); return helper;
     }
 
     if (bus == 1) {

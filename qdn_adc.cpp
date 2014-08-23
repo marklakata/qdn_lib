@@ -157,7 +157,7 @@ void QDN_ADC::DMA_Configure(QDN_DMA& dma, volatile uint16_t* destinationPtr, /*Q
     } while (1);
 
     dma
-        .SetMemory(destinationPtr,numChannels)
+        .SetMemory(destinationPtr,numChannels, sizeof(uint16_t))
 //      .SetCallback(dmaDone);
         .Init();
 

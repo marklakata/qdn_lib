@@ -335,33 +335,33 @@ extern "C" void TIM7_IRQHandler(void);
 extern "C" void TIM2_IRQHandler(void)
 {
     TIM2->SR &= ~TIM_FLAG_Update;
-	tim2Callback();
+    tim2Callback();
 }
 
 extern "C" void TIM3_IRQHandler(void)
 {
     TIM3->SR &= ~TIM_FLAG_Update;
-	tim3Callback();
+    tim3Callback();
 }
 extern "C" void TIM4_IRQHandler(void)
 {
-    TIM4->SR &= ~TIM_FLAG_Update;
 	tim4Callback();
+    TIM4->SR &= ~TIM_FLAG_Update;
 }
 extern "C" void TIM5_IRQHandler(void)
 {
-    TIM5->SR &= ~TIM_FLAG_Update;
 	tim5Callback();
+    TIM5->SR &= ~TIM_FLAG_Update;
 }
 extern "C" void TIM6_IRQHandler(void)
 {
-    TIM6->SR &= ~TIM_FLAG_Update;
 	tim6Callback();
+    TIM6->SR &= ~TIM_FLAG_Update;
 }
 extern "C" void TIM7_IRQHandler(void)
 {
-    TIM7->SR &= ~TIM_FLAG_Update;
 	tim7Callback();
+    TIM7->SR &= ~TIM_FLAG_Update;
 }
 
 //TIM1_BRK_TIM9_IRQHandler

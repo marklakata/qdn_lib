@@ -40,10 +40,17 @@ QDN_SPI::QDN_SPI(int unit, QDN_GPIO_Output& Clk0, QDN_GPIO_Output& MOSI0, QDN_GP
 	: Clk(Clk0)
 	, MOSI(MOSI0)
 	, MISO(MISO0)
-	, clockPolarity(ClockPolarity::IdleLo)
-    , clockPhase(ClockPhase::FirstEdge)
-	, rightShift(1)
 {
+    SPI_StructInit(&spiInitStruct);
+    spiInitStruct.SPI_CPOL      = SPI_CPOL_Low;
+    spiInitStruct.SPI_CPHA      = SPI_CPHA_1Edge;
+    spiInitStruct.SPI_BaudRatePrescaler = 0;
+    spiInitStruct.SPI_Direction = SPI_Direction_2Lines_FullDuplex;
+    spiInitStruct.SPI_Mode      = SPI_Mode_Master;
+    spiInitStruct.SPI_NSS       = SPI_NSS_Soft;
+    spiInitStruct.SPI_FirstBit  = SPI_FirstBit_MSB;
+   // spiInitStruct.SPI_CRCPolynomial = 7;
+
 	switch(unit)
 	{
 	case 1:spi = static_cast<SpiThing*>(SPI1); break;
@@ -57,6 +64,28 @@ QDN_SPI::QDN_SPI(int unit, QDN_GPIO_Output& Clk0, QDN_GPIO_Output& MOSI0, QDN_GP
 	MISO.SetMode( GPIO_Mode_AF_PP);
 }
 
+QDN_SPI& QDN_SPI::SetClockPolarity(ClockPolarity state0)    {
+    spiInitStruct.SPI_CPOL      = ( state0 == ClockPolarity::IdleHi) ? SPI_CPOL_High  : SPI_CPOL_Low;
+    return *this;
+}
+QDN_SPI& QDN_SPI::SetClockPhase(ClockPhase phase)            {
+    spiInitStruct.SPI_CPHA      = ( phase == ClockPhase::FirstEdge   ) ? SPI_CPHA_1Edge : SPI_CPHA_2Edge;
+    return *this;
+}
+QDN_SPI& QDN_SPI::SetClockRateShift(uint32_t rightShift)     {
+    uint16_t prescalarMask = (uint16_t)(rightShift - 1) << 3;
+    if (!IS_SPI_BAUDRATE_PRESCALER(prescalarMask)) QDN_Exception();
+    spiInitStruct.SPI_BaudRatePrescaler = prescalarMask;
+    return *this;
+}
+QDN_SPI& QDN_SPI::SetBitMode(uint8_t bits)
+{
+    if (bits !=8 && bits != 16) QDN_Exception("not supported");
+    spiInitStruct.SPI_DataSize  = (bits == 8)?SPI_DataSize_8b: SPI_DataSize_16b;
+    return *this;
+}
+
+
 void QDN_SPI::Init(void)
 {
 	Clk.HighSpeedInit();
@@ -69,22 +98,7 @@ void QDN_SPI::Init(void)
 	else if (spi == SPI2) RCC->APB1ENR |= RCC_APB1Periph_SPI2;
 	else if (spi == SPI3) RCC->APB1ENR |= RCC_APB1Periph_SPI3;
 
-
-    SPI_InitTypeDef spiInitStruct;
-
     SPI_I2S_DeInit(spi);
-    SPI_StructInit(&spiInitStruct);
-    spiInitStruct.SPI_Direction = SPI_Direction_2Lines_FullDuplex;
-    spiInitStruct.SPI_Mode      = SPI_Mode_Master;
-    spiInitStruct.SPI_DataSize  = SPI_DataSize_8b;
-    spiInitStruct.SPI_CPOL      = ( clockPolarity == ClockPolarity::IdleHi) ? SPI_CPOL_High  : SPI_CPOL_Low;
-    spiInitStruct.SPI_CPHA      = ( clockPhase == ClockPhase::FirstEdge   ) ? SPI_CPHA_1Edge : SPI_CPHA_2Edge;
-    spiInitStruct.SPI_NSS       = SPI_NSS_Soft;
-    uint16_t prescalarMask = (uint16_t)(rightShift - 1) << 3;
-    if (!IS_SPI_BAUDRATE_PRESCALER(prescalarMask)) QDN_Exception();
-    spiInitStruct.SPI_BaudRatePrescaler = prescalarMask;
-    spiInitStruct.SPI_FirstBit  = SPI_FirstBit_MSB;
-   // spiInitStruct.SPI_CRCPolynomial = 7;
     SPI_Init(spi, &spiInitStruct);
 
     SPI_Cmd(spi, ENABLE);

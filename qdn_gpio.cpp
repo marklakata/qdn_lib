@@ -159,7 +159,10 @@ void QDN_OutputPin::Toggle()
 	if(gpio)
 	{
 #ifdef STM32F10X_XL
-		gpio->ODR ^= pinMask;
+	    // there is no atomic XOR/toggle feature, so the only safe way to toggle is to read the bit, then set the bit
+	    // instead of reading the whole register.
+		// dont do this: gpio->ODR ^= pinMask;
+	    if (IsAsserted()) Deassert(); else Assert();
 #else
 #error not implemented yet
 #endif
@@ -277,17 +280,20 @@ void QDN_ExternalInterrupt::Init()
 
 void QDN_ExternalInterrupt::Enable()
 {
-    EXTI->RTSR |= pinMask;
+//    EXTI->RTSR |= pinMask;
+    EXTI->IMR |= pinMask;
 }
 
 void QDN_ExternalInterrupt::Disable()
 {
-    EXTI->RTSR &= ~pinMask;
+//    EXTI->RTSR &= ~pinMask;
+    EXTI->IMR &= ~pinMask;
 }
 
 extern "C" void EXTI0_IRQHandler()
 {
-    if ((EXTI->PR & EXTI_Line0)  && (EXTI->IMR & EXTI_Line0))
+//    if ((EXTI->PR & EXTI_Line0)  && (EXTI->IMR & EXTI_Line0))
+    if (EXTI->IMR & EXTI_Line0)
     {
         ext0_IRQHandler();
         EXTI->PR = EXTI_Line0;

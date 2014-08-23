@@ -33,6 +33,7 @@
 
 #include <stdint.h>
 
+#include <stm32f10x_spi.h>
 class QDN_GPIO_Output;
 class QDN_GPIO_Input;
 class QDN_DMA;
@@ -46,10 +47,10 @@ public:
 
 	enum class ClockPolarity : uint8_t { IdleHi, IdleLo };
 	enum class ClockPhase    : uint8_t { FirstEdge, SecondEdge };
-	QDN_SPI& SetClockPolarity(ClockPolarity state0)     { clockPolarity = state0    ; return *this;}
-	QDN_SPI& SetClockPhase(ClockPhase phase)            { clockPhase    = phase     ; return *this;}
-	QDN_SPI& SetClockRateShift(uint32_t prescaler0)     { rightShift    = prescaler0; return *this;}
-
+	QDN_SPI& SetClockPolarity(ClockPolarity state0);
+	QDN_SPI& SetClockPhase(ClockPhase phase)       ;
+	QDN_SPI& SetClockRateShift(uint32_t prescaler0);
+	QDN_SPI& SetBitMode(uint8_t bits);
 	void Init(void);
 
 	uint8_t  WriteReadU8(uint8_t byte);
@@ -65,9 +66,8 @@ private:
 	QDN_GPIO_Output& MOSI;
 	QDN_GPIO_Input& MISO;
 	SpiThing* spi;
-	ClockPolarity clockPolarity;
-	ClockPhase    clockPhase;
-	uint8_t       rightShift;
+    SPI_InitTypeDef spiInitStruct;
+
 };
 
 

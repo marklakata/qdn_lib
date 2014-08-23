@@ -143,24 +143,20 @@ void QDN_DMA::Init()
     }
 }
 
-QDN_DMA& QDN_DMA::SetMemory(volatile uint16_t* dst, uint32_t size)
+QDN_DMA& QDN_DMA::SetMemory(volatile uint16_t* dst, uint32_t numElements, uint32_t unitSize)
 {
+    switch(unitSize )
+    {
+    case 1: DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte; break;
+    case 2: DMA_InitStructure.DMA_PeripheralDataSize = DMA_MemoryDataSize_HalfWord; break;
+    case 4: DMA_InitStructure.DMA_PeripheralDataSize = DMA_MemoryDataSize_Word; break;
+    }
     DMA_InitStructure.DMA_MemoryBaseAddr     = (uint32_t) dst;
-//    DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
-    DMA_InitStructure.DMA_MemoryDataSize     = DMA_InitStructure.DMA_PeripheralDataSize; //DMA_MemoryDataSize_HalfWord; //DMA_MemoryDataSize_Word;
+    DMA_InitStructure.DMA_MemoryDataSize     = DMA_InitStructure.DMA_PeripheralDataSize; // keep them the same
 
-#if 0
-    if (DMA_InitStructure.DMA_PeripheralDataSize == DMA_PeripheralDataSize_Byte)
-    {
-        size *= 2;
-    }
-    else if (DMA_InitStructure.DMA_PeripheralDataSize != DMA_MemoryDataSize_HalfWord)
-    {
-        QDN_Exception("only u8 and u16 supported");
-    }
-#endif
-    DMA_InitStructure.DMA_BufferSize         = size;
-    counter = size;
+
+    DMA_InitStructure.DMA_BufferSize         = numElements;
+    counter = numElements;
 
     return *this;
 }
@@ -176,6 +172,12 @@ void QDN_DMA::DisableAndRearm()
     dmaChannel->CNDTR  = counter;
 }
 
+void QDN_DMA::DisableAndRearm(void* dest)
+{
+    dmaChannel->CCR   &= ~DMA_CCR1_EN;
+    dmaChannel->CMAR   = reinterpret_cast<uint32_t>(dest);
+    dmaChannel->CNDTR  = counter;
+}
 static ISR_t dma11_IRQHandler;
 static ISR_t dma12_IRQHandler;
 static ISR_t dma13_IRQHandler;

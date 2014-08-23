@@ -43,17 +43,11 @@ void QDN_ADC_AD7xxx::Init(void)
 	convst.HighSpeedInit();
 	convst.Deassert();
 
-#if 0
-	busy.HighSpeedInit();
-#endif
-	// to do
-	// add interrupt on 'busy' pin to start SPI readout
-
-
 	spi
 		.SetClockRateShift(1)
 		.SetClockPolarity(QDN_SPI::ClockPolarity::IdleHi)
 		.SetClockPhase(QDN_SPI::ClockPhase::SecondEdge)
+		.SetBitMode(16)
 		.Init();
 }
 
