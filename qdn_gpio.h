@@ -91,14 +91,12 @@ class QDN_OutputPin: public QDN_Pin
 {
 public:
 	QDN_OutputPin(GPIO_TypeDef* gpio0, int pin0, MODE_t mode0,
-	__IO uint32_t& assertReg0, __IO uint32_t& deassertReg0) :
-			QDN_Pin(gpio0, pin0, mode0), assertReg(assertReg0), deassertReg(
-					deassertReg0)
+	__IO uint32_t& assertReg0, __IO uint32_t& deassertReg0, uint8_t polarity0)
+        : QDN_Pin(gpio0, pin0, mode0), assertReg(assertReg0), deassertReg(deassertReg0), polarity(polarity0)
 	{
 	}
-	QDN_OutputPin(bool /* dummy*/) :
-			QDN_Pin((GPIO_TypeDef*) 0, 0, (MODE_t) 0), assertReg(dummyRegister), deassertReg(
-					dummyRegister)
+	QDN_OutputPin(bool /* dummy*/)
+	    : QDN_Pin((GPIO_TypeDef*) 0, 0, (MODE_t) 0), assertReg(dummyRegister), deassertReg(dummyRegister)
 	{
 
 	}
@@ -123,7 +121,8 @@ public:
 	bool IsAsserted();
 private:
 	__IO uint32_t& assertReg;__IO uint32_t& deassertReg;
-	static __IO uint32_t dummyRegister;
+	uint8_t polarity;
+    static __IO uint32_t dummyRegister;
 };
 
 class QDN_GPIO_Output: public QDN_OutputPin

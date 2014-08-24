@@ -100,9 +100,9 @@ __IO uint32_t QDN_OutputPin::dummyRegister = 0;
 
 QDN_GPIO_Output:: QDN_GPIO_Output(GPIO_TypeDef* gpio0, int pin0)
 #ifdef STM32F10X_XL
-	: QDN_OutputPin(gpio0,pin0,GPIO_Mode_Out_PP,gpio0->BSRR,gpio0->BRR)
+	: QDN_OutputPin(gpio0,pin0,GPIO_Mode_Out_PP,gpio0->BSRR,gpio0->BRR,1)
 #else
-	: QDN_OutputPin(gpio0,pin0,GPIO_OType_PP,gpio0->BSRRL,gpio0->BSRRH)
+	: QDN_OutputPin(gpio0,pin0,GPIO_OType_PP,gpio0->BSRRL,gpio0->BSRRH,1)
 #endif
 {
 }
@@ -127,7 +127,7 @@ void QDN_GPIO_Output::Init( ) {
 
 bool QDN_OutputPin::IsAsserted() {
 	if (gpio) {
-		return (gpio->ODR & pinMask) != 0;
+		return (!!(gpio->ODR & pinMask)) == polarity;
 	} else {
 		return false;
 	}
@@ -136,9 +136,9 @@ bool QDN_OutputPin::IsAsserted() {
 
 QDN_GPIO_OutputN::QDN_GPIO_OutputN(GPIO_TypeDef* gpio0, int pin0)
 #ifdef STM32F10X_XL
-	: QDN_OutputPin(gpio0,pin0,GPIO_Mode_Out_PP,gpio0->BRR,gpio0->BSRR)
+	: QDN_OutputPin(gpio0,pin0,GPIO_Mode_Out_PP,gpio0->BRR,gpio0->BSRR,0)
 #else
-	: QDN_OutputPin(gpio0,pin0,GPIO_OType_PP,gpio0->BSRRH,gpio0->BSRRL)
+	: QDN_OutputPin(gpio0,pin0,GPIO_OType_PP,gpio0->BSRRH,gpio0->BSRRL,0)
 #endif
 {
 }
@@ -147,9 +147,9 @@ QDN_GPIO_OutputN::QDN_GPIO_OutputN(GPIO_TypeDef* gpio0, int pin0)
 
 QDN_GPIO_OpenDrainN::QDN_GPIO_OpenDrainN(GPIO_TypeDef* gpio0, int pin0)
 #ifdef STM32F10X_XL
-	: QDN_OutputPin(gpio0,pin0,GPIO_Mode_Out_OD,gpio0->BRR,gpio0->BSRR)
+	: QDN_OutputPin(gpio0,pin0,GPIO_Mode_Out_OD,gpio0->BRR,gpio0->BSRR,0)
 #else
-	: QDN_OutputPin(gpio0,pin0,GPIO_OType_OD,gpio0->BSRRH,gpio0->BSRRL)
+	: QDN_OutputPin(gpio0,pin0,GPIO_OType_OD,gpio0->BSRRH,gpio0->BSRRL,0)
 #endif
 {
 }
@@ -162,7 +162,15 @@ void QDN_OutputPin::Toggle()
 	    // there is no atomic XOR/toggle feature, so the only safe way to toggle is to read the bit, then set the bit
 	    // instead of reading the whole register.
 		// dont do this: gpio->ODR ^= pinMask;
-	    if (IsAsserted()) Deassert(); else Assert();
+	    volatile bool x = IsAsserted();
+	    if (x)
+        {
+            Deassert();
+        }
+	    else
+        {
+            Assert();
+        }
 #else
 #error not implemented yet
 #endif
