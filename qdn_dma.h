@@ -47,7 +47,7 @@ public:
     QDN_DMA& SetMemory(volatile uint16_t* dst, uint32_t numTransfers, uint32_t unitSize);
     void Enable();
     void DisableAndRearm();
-    void DisableAndRearm(void* dest);
+    void DisableAndRearm(volatile void* dest);
 
 private:
     friend QDN_ADC;

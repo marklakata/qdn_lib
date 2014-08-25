@@ -172,7 +172,7 @@ void QDN_DMA::DisableAndRearm()
     dmaChannel->CNDTR  = counter;
 }
 
-void QDN_DMA::DisableAndRearm(void* dest)
+void QDN_DMA::DisableAndRearm(volatile void* dest)
 {
     dmaChannel->CCR   &= ~DMA_CCR1_EN;
     dmaChannel->CMAR   = reinterpret_cast<uint32_t>(dest);
