@@ -77,7 +77,7 @@ public:
 		}
 	}
 	uint32_t Count(void) {
-		volatile int32_t c = wptr;
+		int32_t c = wptr;
 		c -= rptr;
 		if (c < 0) c += size;
 		return c;
