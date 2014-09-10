@@ -31,6 +31,7 @@
 #ifndef _QDN_ADC_H_
 #define _QDN_ADC_H_
 
+#include <vector>
 #include "qdn_gpio.h"
 
 class QDN_ADC;
@@ -42,8 +43,9 @@ class QDN_ADC
 {
 public:
 	QDN_ADC(int unit);
-    void DMA_Configure(QDN_DMA& dma, volatile uint16_t* dstArray, /*QDN_ADC_Pin*/...);
+    void DMA_Configure(QDN_DMA& dma, volatile uint16_t* dstArray, const std::vector<const QDN_ADC_Pin*>& adcList);
     void EnableAndCalibrate();
+    void EnableTempSensor();
 private:
     friend QDN_ADC_Pin;
     friend QDN_DMA;

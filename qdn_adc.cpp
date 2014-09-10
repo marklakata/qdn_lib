@@ -139,26 +139,13 @@ static void dmaDone(void)
 	dma1_1Done++;
 }
 
-void QDN_ADC::DMA_Configure(QDN_DMA& dma, volatile uint16_t* destinationPtr, /*QDN_ADC_Pin, QDN_ADC_Pin,*/...)
+void QDN_ADC::DMA_Configure(QDN_DMA& dma, volatile uint16_t* destinationPtr, const std::vector<const QDN_ADC_Pin*>& adcList)
 {
-
-//    ADC_TempSensorVrefintCmd(ENABLE);
-
-    uint8_t channels[16];
-    uint32_t numChannels = 0;
-
-    va_list channelList;
-    va_start(channelList, destinationPtr);
-
-    do {
-        int channel = va_arg(channelList,int);
-        if (channel < 0 || numChannels >= 16) break;
-        channels[numChannels++] = channel;
-    } while (1);
+    int numChannels = adcList.size();
 
     dma
         .SetMemory(destinationPtr,numChannels, sizeof(uint16_t))
-//      .SetCallback(dmaDone);
+//        .SetCallback(dmaDone)
         .Init();
 
     ADC_InitTypeDef ADC_InitStructure;
@@ -170,17 +157,23 @@ void QDN_ADC::DMA_Configure(QDN_DMA& dma, volatile uint16_t* destinationPtr, /*Q
     ADC_InitStructure.ADC_NbrOfChannel       = numChannels;
     ADC_Init(adc, &ADC_InitStructure);
 
-    uint32_t i;
-    for(i=0;i<numChannels;i++) {
-        ADC_RegularChannelConfig(adc, channels[i], i+1, sampleTime);
+    uint32_t rank = 1;
+    for(auto x : adcList )
+    {
+        ADC_RegularChannelConfig(adc, x->Channel, rank, sampleTime);
+        rank++;
     }
 
     ADC_DMACmd(adc, ENABLE);
     EnableAndCalibrate();
     ADC_SoftwareStartConvCmd(adc, ENABLE);
-    va_end(channelList);
-
 }
+
+void QDN_ADC::EnableTempSensor()
+{
+    ADC_TempSensorVrefintCmd(ENABLE);
+}
+
 
 void QDN_ADC::EnableAndCalibrate()
 {

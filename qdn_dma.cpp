@@ -147,12 +147,20 @@ QDN_DMA& QDN_DMA::SetMemory(volatile uint16_t* dst, uint32_t numElements, uint32
 {
     switch(unitSize )
     {
-    case 1: DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte; break;
-    case 2: DMA_InitStructure.DMA_PeripheralDataSize = DMA_MemoryDataSize_HalfWord; break;
-    case 4: DMA_InitStructure.DMA_PeripheralDataSize = DMA_MemoryDataSize_Word; break;
+    case 1:
+        DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
+        DMA_InitStructure.DMA_MemoryDataSize     = DMA_MemoryDataSize_Byte;
+        break;
+    case 2:
+        DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_HalfWord;
+        DMA_InitStructure.DMA_MemoryDataSize     = DMA_MemoryDataSize_HalfWord;
+        break;
+    case 4:
+        DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Word;
+        DMA_InitStructure.DMA_MemoryDataSize     = DMA_MemoryDataSize_Word;
+        break;
     }
     DMA_InitStructure.DMA_MemoryBaseAddr     = (uint32_t) dst;
-    DMA_InitStructure.DMA_MemoryDataSize     = DMA_InitStructure.DMA_PeripheralDataSize; // keep them the same
 
 
     DMA_InitStructure.DMA_BufferSize         = numElements;
