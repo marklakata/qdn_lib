@@ -392,7 +392,13 @@ typedef int XOS_Flag_t;
 #define XOS_FlagReset(x) do {XOS_EnterCritical(); x = 0; XOS_LeaveCritical();} while (0)
 #define XOS_FlagReadAndClear(x,y) {XOS_EnterCritical(); y = x; x=0; XOS_LeaveCritical();} while (0)
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 void XOS_Delay100Ns(uint16_t timeUnits);
+#ifdef __cplusplus
+}
+#endif
 
 #endif // _OS_H_
 
