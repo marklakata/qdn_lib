@@ -140,6 +140,12 @@ int16_t QDN_DAC_MCP4822::SetOutput(const QDN_DAC_MCP4822::Channel channel, const
 	command |= count;
 
 	WriteCommand(command);
+	counts[static_cast<int>(channel)] = count;
 
 	return 0;
+}
+
+uint16_t QDN_DAC_MCP4822::GetOutput(const QDN_DAC_MCP4822::Channel channel)
+{
+    return counts[static_cast<int>(channel)];
 }

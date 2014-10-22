@@ -51,7 +51,8 @@ public:
 
 	/// Count is 0 to 0xFFF (12 bit)
 	enum class Channel { ChannelA, ChannelB };
-	int16_t SetOutput(const Channel channel, const uint16_t count);
+	int16_t  SetOutput(const Channel channel, const uint16_t count);
+	uint16_t GetOutput(const Channel channel);
 	int16_t HighZ(void);
 
 private:
@@ -62,6 +63,7 @@ private:
 	QDN_OutputPin& ldac;
 
 	uint16_t gainCommand;
+	uint16_t counts[2];
 };
 
 
