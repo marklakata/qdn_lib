@@ -133,11 +133,13 @@ QDN_ADC::QDN_ADC(int unit)
 }
 
 
+#ifdef DMA_DONE
 uint32_t dma1_1Done = 0;
 static void dmaDone(void)
 {
 	dma1_1Done++;
 }
+#endif
 
 void QDN_ADC::DMA_Configure(QDN_DMA& dma, volatile uint16_t* destinationPtr, const std::vector<const QDN_ADC_Pin*>& adcList)
 {
@@ -145,7 +147,9 @@ void QDN_ADC::DMA_Configure(QDN_DMA& dma, volatile uint16_t* destinationPtr, con
 
     dma
         .SetMemory(destinationPtr,numChannels, sizeof(uint16_t))
-//        .SetCallback(dmaDone)
+#ifdef DMA_DONE
+        .SetCallback(dmaDone)
+#endif
         .Init();
 
     ADC_InitTypeDef ADC_InitStructure;
