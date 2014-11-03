@@ -594,13 +594,12 @@ extern "C" float QDN_ParamFloat(uint16_t index) {
     return buffer.f32;
 }
 
+// maxChars includes trailing null
 extern "C" int QDN_ParamString(uint16_t index, char* buffer, int32_t maxChars) {
+    if (maxChars < 1) return 1;
     char* ptr = (char*) &parameter[index];
     strncpy(buffer,ptr,maxChars);
-    if (buffer[maxChars-1]) {
-    	buffer[maxChars-1] = 0;
-    	return 1; // overflow, but still salvageable...
-    }
+    buffer[maxChars-1] = 0;
     return 0;
 }
 
