@@ -315,7 +315,7 @@ public:
                 if (poverride.ValidateChecksum()) {
                     if (poverride.index <= MAX_PARAMETER_NUMBER ) {
                         parameter[poverride.index] = poverride.value;
-                        SetStatus(poverride.index,2);
+                        SetStatus(poverride.index,STATUS_MODIFIED);
                     }
                 }
                 break;
@@ -413,10 +413,14 @@ private:
                         if (resetDefaultFlag) {
                             // skip it, so that it gets erased
                         } else {
-                            poverride.value = value;
-                            overriden = 1;
-                            poverride.WriteFlash(paramNextDefinitionAddress);
-                            paramNextDefinitionAddress += sizeof(ParamOverride_t);
+                            if (!overriden)
+                            {
+                                overriden = 1;
+                                poverride.value = value;
+                                poverride.WriteFlash(paramNextDefinitionAddress);
+                                paramNextDefinitionAddress += sizeof(ParamOverride_t);
+                            }
+                            // else skip it. No point in writing it multiple times
                         }
                     } else {
                         poverride.WriteFlash(paramNextDefinitionAddress);
