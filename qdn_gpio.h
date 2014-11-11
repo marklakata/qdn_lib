@@ -68,15 +68,15 @@ public:
 	enum class Port { A=1, B=2, C=3, D=4, E=5, F=6, G=7, H=8};
 	constexpr inline static uint16_t PinHash(const Port port, const int pin)
 	{
-	return (static_cast<uint16_t>(port) << 8) | pin;
+	    return (static_cast<uint16_t>(port) << 8) | pin;
 	}
-	uint16_t GetPinHash()
+	uint16_t GetPinHash() const
 	{
 		return (static_cast<int>(GetPort())<< 8) | pinNum;
 	}
-	const Port GetPort();
-	const GPIO_TypeDef* GetGPIO() { return gpio;}
-	const int GetPinNum() { return pinNum;}
+	const Port GetPort() const;
+	const GPIO_TypeDef* GetGPIO() const { return gpio;}
+	const int GetPinNum() const { return pinNum;}
 	void SetMode(MODE_t mode0) { mode = mode0; }
 protected:
 	GPIO_TypeDef* gpio;
@@ -118,7 +118,7 @@ public:
 	}
 	void Toggle();
 
-	bool IsAsserted();
+	bool IsAsserted() const;
 private:
 	__IO uint32_t& assertReg;__IO uint32_t& deassertReg;
 	uint8_t polarity;
@@ -153,7 +153,7 @@ public:
 	{
 
 	}
-	bool IsAsserted();
+	bool IsAsserted() const;
 private:
 	uint8_t polarity;
 };

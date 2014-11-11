@@ -42,7 +42,7 @@ void    QDN_ParamInit(void);
 void    QDN_ParamSetDefault(uint16_t index, int32_t value, Callback_t cb);
 void    QDN_ParamSetRaw(uint16_t index, int32_t value);
 void    QDN_ParamSetFloatRaw(uint16_t index, float value);
-void    QDN_ParamSetString(uint16_t index, uint16_t lastIndex, char* buffer, int32_t length);
+void    QDN_ParamSetString(uint16_t index, uint16_t lastIndex, const char* buffer, uint32_t length);
 void    QDN_ParamSetWithCallback(uint16_t index, int32_t value);
 int32_t QDN_ParamInt32(uint16_t index);
 float   QDN_ParamFloat(uint16_t index);

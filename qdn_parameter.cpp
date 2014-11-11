@@ -130,7 +130,7 @@ public:
 public:
     void Zero(uint32_t address) {
         // corrupted record. get rid of it.
-        memset(this,PAGE_ERASED,sizeof(ParamOverride_t));
+        memset(this,U8_INVALID,sizeof(ParamOverride_t));
 #if PAGE_ERASED == 0xFF
         FlashWriteArray(address,(uint8_t*)this,sizeof(ParamOverride_t));
 #elif PAGE_ERASED == 0x00
@@ -198,11 +198,15 @@ public:
     }
     
     void SetParameterRaw(uint16_t index, int32_t value) {
-        if (index <= MAX_PARAMETER_NUMBER) {
-            parameter[index] = value;
+        if (index <= MAX_PARAMETER_NUMBER)
+        {
             SetStatus(index, STATUS_MODIFIED);
-            uint8_t option = 0;
-            ParamWriteToFlashWithCleanup(index,value,option);
+            if (parameter[index] != value)
+            {
+                parameter[index] = value;
+                uint8_t option = 0;
+                ParamWriteToFlashWithCleanup(index,value,option);
+            }
         }
     }
     void SetParameterWithCallback(uint16_t index, int32_t value) {
@@ -554,16 +558,18 @@ extern "C"  void QDN_ParamSetFloatRaw(uint16_t index, float value) {
     paramDb.SetParameterRaw(index,buffer.i32);
 }
 
-extern "C"  void  QDN_ParamSetString(uint16_t firstIndex, uint16_t lastIndex, char* buffer, int32_t length)
+extern "C"  void  QDN_ParamSetString(uint16_t firstIndex, uint16_t lastIndex, const char* buffer, uint32_t length)
 {
 	for(uint16_t index=firstIndex;index<=lastIndex;index++)
 	{
 		int32_t ivalue = 0;
 		if (length >0)
 		{
-			memcpy(&ivalue,buffer,4);
-			length-= 4;
-			buffer += 4;
+		    uint32_t tocopy = length;
+		    if (tocopy > sizeof(ivalue)) tocopy = sizeof(ivalue);
+			memcpy(&ivalue,buffer,tocopy);
+			length -= tocopy;
+			buffer += tocopy;
 		}
 		paramDb.SetParameterRaw(index,ivalue);
 	}

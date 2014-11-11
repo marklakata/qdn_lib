@@ -50,7 +50,7 @@ protected:
 	{
 	}
 public:
-	int Enqueue(ELEMENT e)
+	int Enqueue(const ELEMENT e)
 	{
 		uint32_t next = wptr +1;
 		if (next >= size) next=0;
@@ -76,7 +76,7 @@ public:
 			return -1;
 		}
 	}
-	uint32_t Count(void) {
+	uint32_t Count(void) const {
 		int32_t c = wptr;
 		c -= rptr;
 		if (c < 0) c += size;

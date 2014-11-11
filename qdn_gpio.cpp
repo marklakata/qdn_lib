@@ -82,7 +82,7 @@ void  QDN_Pin::HighSpeedInit() {
 	}
 }
 
-const QDN_Pin::Port QDN_Pin::GetPort()
+const QDN_Pin::Port QDN_Pin::GetPort() const
 {
 #ifdef STM32F10X_XL
 	uint32_t offset = reinterpret_cast<uint32_t>(gpio) - reinterpret_cast<uint32_t>(GPIOA);
@@ -125,7 +125,8 @@ void QDN_GPIO_Output::Init( ) {
 #endif
 
 
-bool QDN_OutputPin::IsAsserted() {
+bool QDN_OutputPin::IsAsserted() const
+{
 	if (gpio) {
 		return (!!(gpio->ODR & pinMask)) == polarity;
 	} else {
@@ -179,7 +180,8 @@ void QDN_OutputPin::Toggle()
 
 ///-------------------------------------------------------------------------
 
-bool     QDN_InputPin::IsAsserted() {
+bool     QDN_InputPin::IsAsserted() const
+{
     return (GPIO_ReadInputDataBit(gpio,pinMask) == polarity);
 }
 
