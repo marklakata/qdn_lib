@@ -608,7 +608,7 @@ extern "C" float QDN_ParamFloat(uint16_t index) {
 extern "C" int QDN_ParamString(uint16_t index, char* buffer, int32_t maxChars) {
     if (maxChars < 1) return 1;
     char* ptr = (char*) &parameter[index];
-    strncpy(buffer,ptr,maxChars);
+    strncpy(buffer,ptr,maxChars-1);
     buffer[maxChars-1] = 0;
     return 0;
 }
