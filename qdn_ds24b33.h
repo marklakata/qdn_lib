@@ -49,7 +49,7 @@ private:
     };
 
     QDN_OneWire& owire;
-    uint8_t romCode[8];
+    uint64_t romAddress;
     bool multiSlave;
     Address addr;
 
@@ -57,8 +57,8 @@ private:
 
 public:
     QDN_DS24B33_EEPROM(QDN_OneWire& owire0);
-    static bool IsEEPROM(const uint8_t* romCode);
-    void SetRomCode(const uint8_t* romCode);
+    static bool IsEEPROM(const uint64_t& romCode);
+    void SelectRomCode(const uint64_t& romCode);
 
     // high level access
     bool WriteEEPROM(  uint16_t address, const uint8_t* data,  uint16_t len);

@@ -72,7 +72,11 @@ private:
   uint16_t              m_BitMask;
 
   // global search state
-  unsigned char ROM_NO[8];
+  union
+  {
+      unsigned char ROM_NO[8];
+      uint64_t address;
+  } romAddress;
   uint8_t LastDiscrepancy;
   uint8_t LastFamilyDiscrepancy;
   bool    LastDeviceFlag;
@@ -91,8 +95,8 @@ public:
 
 
     void Reset_search();
-    bool Search(uint8_t *newAddr);
-    void Select(uint8_t rom[8]);
+    bool Search(uint64_t& address);
+    void Select(const uint64_t& address);
     void Skip();
 
     void Write_bit( uint8_t v);

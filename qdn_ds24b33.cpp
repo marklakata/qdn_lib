@@ -55,18 +55,19 @@ QDN_DS24B33_EEPROM::QDN_DS24B33_EEPROM(QDN_OneWire& owire0)
 {
 }
 
-void QDN_DS24B33_EEPROM::SetRomCode(const uint8_t* romCode0)
+void QDN_DS24B33_EEPROM::SelectRomCode(const uint64_t& romCode0)
 {
-    memcpy(romCode,romCode0,sizeof(romCode));
+    romAddress = romCode0;
     multiSlave = true;
 }
 
-bool QDN_DS24B33_EEPROM::IsEEPROM(const uint8_t* romCode)
+bool QDN_DS24B33_EEPROM::IsEEPROM(const uint64_t& romCode)
 {
-    if (romCode[0] == FAMILY_CODE)
+    const uint8_t* pRomCode = reinterpret_cast<const uint8_t*>(&romCode);
+    if (pRomCode[0] == FAMILY_CODE)
     {
-        uint8_t crc = QDN_OneWire::Crc8(romCode,7);
-        if (crc == romCode[7]) return true;
+        uint8_t crc = QDN_OneWire::Crc8(pRomCode,7);
+        if (crc == pRomCode[7]) return true;
     }
     return false;
 }
@@ -78,7 +79,7 @@ bool QDN_DS24B33_EEPROM::Startup()
     {
         if (multiSlave)
         {
-            owire.Select(romCode);
+            owire.Select(romAddress);
         } else {
             owire.Skip();
         }

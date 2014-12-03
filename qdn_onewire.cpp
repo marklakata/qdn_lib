@@ -294,9 +294,10 @@ void QDN_OneWire::Read_bytes(uint8_t *buf, uint16_t count)
 #define OW_SKIP_ROM   0xCC
 #define OW_SEARCH_ROM 0xF0
 
-void QDN_OneWire::Select(uint8_t rom[8])
+void QDN_OneWire::Select(const uint64_t& address)
 {
     Write(OW_MATCH_ROM);
+    const uint8_t* rom = reinterpret_cast<const uint8_t*>(&address);
     for(int i = 0; i < 8; i++) Write(rom[i]);
 }
 
@@ -319,17 +320,13 @@ void QDN_OneWire::Reset_search()
   LastDiscrepancy = 0;
   LastDeviceFlag = false;
   LastFamilyDiscrepancy = 0;
-  for(int i = 7; ; i--)
-  {
-    ROM_NO[i] = 0;
-    if ( i == 0) break;
-  }
+  romAddress.address = 0;
   numDevices = 0;
 }
 
 // call Reset_search first, then
 // call this function until it returns false
-bool QDN_OneWire::Search(uint8_t* newAddr)
+bool QDN_OneWire::Search(uint64_t& foundAddress)
 {
    uint8_t id_bit_number;
    uint8_t last_zero, rom_byte_number;
@@ -381,7 +378,7 @@ bool QDN_OneWire::Search(uint8_t* newAddr)
                // if this discrepancy if before the Last Discrepancy
                // on a previous next then pick the same as last time
                if (id_bit_number < LastDiscrepancy)
-                  search_direction = ((ROM_NO[rom_byte_number] & rom_byte_mask) > 0);
+                  search_direction = ((romAddress.ROM_NO[rom_byte_number] & rom_byte_mask) > 0);
                else
                   // if equal to last pick 1, if not then pick 0
                   search_direction = (id_bit_number == LastDiscrepancy);
@@ -400,9 +397,9 @@ bool QDN_OneWire::Search(uint8_t* newAddr)
             // set or clear the bit in the ROM byte rom_byte_number
             // with mask rom_byte_mask
             if (search_direction == 1)
-              ROM_NO[rom_byte_number] |= rom_byte_mask;
+              romAddress.ROM_NO[rom_byte_number] |= rom_byte_mask;
             else
-              ROM_NO[rom_byte_number] &= ~rom_byte_mask;
+              romAddress.ROM_NO[rom_byte_number] &= ~rom_byte_mask;
 
             // serial number search direction write bit
             Write_bit(search_direction);
@@ -437,14 +434,14 @@ bool QDN_OneWire::Search(uint8_t* newAddr)
    }
 
    // if no device found then reset counters so next 'search' will be like a first
-   if (!search_result || !ROM_NO[0])
+   if (!search_result || ! romAddress.ROM_NO[0])
    {
       LastDiscrepancy = 0;
       LastDeviceFlag = false;
       LastFamilyDiscrepancy = 0;
       search_result = false;
    }
-   for (int i = 0; i < 8; i++) newAddr[i] = ROM_NO[i];
+   foundAddress = romAddress.address;
    if (search_result) numDevices++;
    return search_result;
 }
