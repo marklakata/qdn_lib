@@ -141,9 +141,6 @@ void QDN_OneWire::Init()
   m_InputMask = (((GPIO_Mode_IN_FLOATING) << RegShift) & m_RegMask);
   m_OutputMask = (((uint32_t)GPIO_Mode_Out_OD|(uint32_t)GPIO_Speed_50MHz) << RegShift) & m_RegMask;
 
-#ifdef ONEWIRE_SEARCH
-  Reset_search();
-#endif
 }
 
 void QDN_OneWire::Input()
@@ -211,7 +208,7 @@ uint8_t QDN_OneWire::Reset()
     return r;
 }
 
-void QDN_OneWire::Write_bit(uint8_t v)
+void QDN_OneWire::WriteBit(uint8_t v)
 {
     if (v & 1) {
         NoInterrupts();
@@ -232,7 +229,7 @@ void QDN_OneWire::Write_bit(uint8_t v)
     }
 }
 
-uint8_t QDN_OneWire::Read_bit()
+uint8_t QDN_OneWire::ReadBit()
 {
     uint8_t r;
 
@@ -252,7 +249,7 @@ void QDN_OneWire::Write( uint8_t v) {
     uint8_t bitMask;
 
     for (bitMask = 0x01; bitMask; bitMask <<= 1) {
-        Write_bit((bitMask & v)?1:0);
+        WriteBit((bitMask & v)?1:0);
     }
 
     NoInterrupts();
@@ -261,7 +258,7 @@ void QDN_OneWire::Write( uint8_t v) {
     Interrupts();
 }
 
-void QDN_OneWire::Write_bytes(const uint8_t *buf, uint16_t count) {
+void QDN_OneWire::WriteBytes(const uint8_t *buf, uint16_t count) {
   for (uint16_t i = 0 ; i < count ; i++)
     Write(buf[i]);
 
@@ -279,12 +276,12 @@ uint8_t QDN_OneWire::Read()
     uint8_t r = 0;
 
     for (bitMask = 0x01; bitMask; bitMask <<= 1) {
-        if ( Read_bit()) r |= bitMask;
+        if ( ReadBit()) r |= bitMask;
     }
     return r;
 }
 
-void QDN_OneWire::Read_bytes(uint8_t *buf, uint16_t count)
+void QDN_OneWire::ReadBytes(uint8_t *buf, uint16_t count)
 {
   for (uint16_t i = 0 ; i < count ; i++)
     buf[i] = Read();
@@ -314,7 +311,7 @@ void QDN_OneWire::Depower()
 }
 
 
-void QDN_OneWire::Reset_search()
+void QDN_OneWire::ResetSearch()
 {
     // must be called before a series Search commands
   LastDiscrepancy = 0;
@@ -362,8 +359,8 @@ bool QDN_OneWire::Search(uint64_t& foundAddress)
       do
       {
          // read a bit and its complement
-         id_bit = Read_bit();
-         cmp_id_bit = Read_bit();
+         id_bit = ReadBit();
+         cmp_id_bit = ReadBit();
 
          // check for no devices on 1-wire
          if ((id_bit == 1) && (cmp_id_bit == 1))
@@ -402,7 +399,7 @@ bool QDN_OneWire::Search(uint64_t& foundAddress)
               romAddress.ROM_NO[rom_byte_number] &= ~rom_byte_mask;
 
             // serial number search direction write bit
-            Write_bit(search_direction);
+            WriteBit(search_direction);
 
             // increment the byte counter id_bit_number
             // and shift the mask rom_byte_mask
@@ -512,7 +509,7 @@ uint8_t QDN_OneWire::Crc8( const uint8_t *addr, uint8_t len)
 #endif
 
 #ifdef ONEWIRE_CRC16
-uint8_t QDN_OneWire::Check_crc16(const uint8_t* input, uint16_t len, uint8_t* inverted_crc)
+uint8_t QDN_OneWire::CheckCrc16(const uint8_t* input, uint16_t len, uint8_t* inverted_crc)
 {
     uint16_t crc = ~Crc16(input, len);
     return (crc & 0xFF) == inverted_crc[0] && (crc >> 8) == inverted_crc[1];

@@ -126,9 +126,9 @@ bool QDN_DS24B33_EEPROM::ReadEEPROM(  uint16_t address,  uint8_t* dst,  uint16_t
         owire.Write(DS24B33READMEMORY);                                              // Read Memory
         Address addr;
         addr.TA = address;
-        owire.Write_bytes(addr.u8,2);
+        owire.WriteBytes(addr.u8,2);
 
-        owire.Read_bytes(dst,thisTime);
+        owire.ReadBytes(dst,thisTime);
 
         dst += thisTime;
         address += thisTime;
@@ -144,8 +144,8 @@ bool QDN_DS24B33_EEPROM::WriteScratchPad( uint16_t address, const uint8_t* src, 
     owire.Write(DS24B33WRITESCRATCHPAD);
     Address addr;
     addr.TA = address;
-    owire.Write_bytes(addr.u8,2);
-    owire.Write_bytes(src,len);
+    owire.WriteBytes(addr.u8,2);
+    owire.WriteBytes(src,len);
     return true;
 }
 
@@ -154,11 +154,11 @@ bool QDN_DS24B33_EEPROM::VerifyScratchPad( const uint8_t* src,  uint8_t len)
     uint8_t scratch[SCRATCH_SIZE];
     if (!Startup()) return false;
     owire.Write(DS24B33READSCRATCHPAD);
-    owire.Read_bytes(addr.u8,3);
+    owire.ReadBytes(addr.u8,3);
     bool PFFlag = !!(addr.ES & 0x20);
     if (PFFlag) return false;
 
-    owire.Read_bytes(scratch,len);
+    owire.ReadBytes(scratch,len);
     bool r= memcmp(scratch,src,len) == 0;
     return r;
 }
@@ -170,13 +170,13 @@ bool QDN_DS24B33_EEPROM::CopyScratchPad()
         if (Startup())
         {
             owire.Write(DS24B33COPYSCRATCHPAD);
-            owire.Write_bytes(addr.u8,3);
+            owire.WriteBytes(addr.u8,3);
 
             XOS_DelayMs(7);
 
             // look for toggling of bit
-            bool s = owire.Read_bit();
-            bool t = owire.Read_bit();
+            bool s = owire.ReadBit();
+            bool t = owire.ReadBit();
             if (s != t)
             {
                 owire.Reset();

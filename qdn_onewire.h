@@ -61,6 +61,9 @@
 #define ONEWIRE_CRC16 1
 #endif
 
+///
+/// A class that acts an physical interface class to all 1-wire devices
+///
 class QDN_OneWire
 {
 private:
@@ -94,24 +97,33 @@ public:
     uint8_t Reset();
 
 
-    void Reset_search();
+    void ResetSearch();
     bool Search(uint64_t& address);
     void Select(const uint64_t& address);
     void Skip();
 
-    void Write_bit( uint8_t v);
-    void Write(uint8_t v);
-    void Write_bytes(const uint8_t *buf, uint16_t count);
-    uint8_t Read_bit();
+    ///
+    /// Write one byte to the device
+    ///
+    void    Write(uint8_t v);
+    void    WriteBytes(const uint8_t *buf, uint16_t count);
+
+    ///
+    /// Read one byte from the device
+    ///
     uint8_t Read();
-    void Read_bytes(uint8_t *buf, uint16_t count);
+    void    ReadBytes(uint8_t *buf, uint16_t count);
 
     void Depower();
 
+    void WriteBit( uint8_t v);
+    uint8_t ReadBit();
+
+public:
 #ifdef ONEWIRE_CRC
     static uint8_t Crc8( const uint8_t *addr, uint8_t len);
 #ifdef ONEWIRE_CRC16
-    static uint8_t Check_crc16(const uint8_t* input, uint16_t len, uint8_t* inverted_crc);
+    static uint8_t CheckCrc16(const uint8_t* input, uint16_t len, uint8_t* inverted_crc);
     static uint16_t Crc16(const uint8_t* input, uint16_t len);
 #endif
 
