@@ -39,12 +39,28 @@ class QDN_ADC_Pin;
 class QDN_SPI;
 class QDN_DMA;
 
+/// Class to wrap the ADC hardware.
+///
 class QDN_ADC
 {
 public:
-	QDN_ADC(int unit);
+    /// Constructor.
+    /// Unit is 1, 2, 3 for the ADC unit.
+    QDN_ADC(int unit);
+
+    /// configure the ADC for non-DMA readout.
+    ///
+    void Configure();
+
+    /// configure a range of ADC pins to this ADC and configure to use DMA to copy the data directly to memory
+    ///
     void DMA_Configure(QDN_DMA& dma, volatile uint16_t* dstArray, const std::vector<const QDN_ADC_Pin*>& adcList);
+
+
     void EnableAndCalibrate();
+
+    /// Enable the temperature sensor.
+    ///
     void EnableTempSensor();
 private:
     friend QDN_ADC_Pin;
@@ -55,6 +71,8 @@ private:
 
 class QDN_ADC_Pin : QDN_Pin {
 public:
+
+    /// Constructor for ADC PIN.
     QDN_ADC_Pin(GPIO_TypeDef* gpio0, int pin0, QDN_ADC& adc0);
     void Init();
     uint16_t Channel;

@@ -141,6 +141,20 @@ static void dmaDone(void)
 }
 #endif
 
+void QDN_ADC::Configure()
+{
+    ADC_InitTypeDef ADC_InitStructure;
+    ADC_StructInit(&ADC_InitStructure);
+    ADC_InitStructure.ADC_Mode               = ADC_Mode_Independent;
+    ADC_InitStructure.ADC_ScanConvMode       = DISABLE;
+    ADC_InitStructure.ADC_ContinuousConvMode = DISABLE;
+    ADC_InitStructure.ADC_ExternalTrigConv   = ADC_ExternalTrigConv_None;
+    ADC_InitStructure.ADC_DataAlign          = ADC_DataAlign_Right;
+    ADC_InitStructure.ADC_NbrOfChannel       = 1;
+    ADC_Init(adc, &ADC_InitStructure);
+    EnableAndCalibrate();
+}
+
 void QDN_ADC::DMA_Configure(QDN_DMA& dma, volatile uint16_t* destinationPtr, const std::vector<const QDN_ADC_Pin*>& adcList)
 {
     int numChannels = adcList.size();
@@ -153,6 +167,7 @@ void QDN_ADC::DMA_Configure(QDN_DMA& dma, volatile uint16_t* destinationPtr, con
         .Init();
 
     ADC_InitTypeDef ADC_InitStructure;
+    ADC_StructInit(&ADC_InitStructure);
     ADC_InitStructure.ADC_Mode               = ADC_Mode_Independent;
     ADC_InitStructure.ADC_ScanConvMode       = ENABLE;
     ADC_InitStructure.ADC_ContinuousConvMode = ENABLE;
@@ -191,5 +206,9 @@ void QDN_ADC::EnableAndCalibrate()
 
 uint16_t QDN_ADC_Pin::ReadOnce()
 {
-    return 0;
+    ADC_RegularChannelConfig(adc.adc, Channel, 1, ADC_SampleTime_239Cycles5);
+    ADC_ClearFlag(adc.adc, ADC_FLAG_EOC);
+    ADC_SoftwareStartConvCmd(adc.adc, ENABLE);
+    while(ADC_GetSoftwareStartConvStatus(adc.adc) != SET) { }
+    return ADC_GetConversionValue(adc.adc);
 }
