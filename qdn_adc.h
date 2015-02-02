@@ -57,6 +57,8 @@ public:
     void DMA_Configure(QDN_DMA& dma, volatile uint16_t* dstArray, const std::vector<const QDN_ADC_Pin*>& adcList);
 
 
+    void Enable();
+
     void EnableAndCalibrate();
 
     /// Enable the temperature sensor.
@@ -69,15 +71,17 @@ private:
     ADC_TypeDef* adc;
 };
 
-class QDN_ADC_Pin : QDN_Pin {
+/// Class to wrap a particular pin to a particular ADC unit.
+/// To use, first create the QDN_ADC instance, then create
+/// this object to connect the pin to the ADC.
+class QDN_ADC_Pin : public QDN_Pin {
 public:
 
     /// Constructor for ADC PIN.
     QDN_ADC_Pin(GPIO_TypeDef* gpio0, int pin0, QDN_ADC& adc0);
-    void Init();
-    uint16_t Channel;
-
     uint16_t ReadOnce();
+    uint16_t Channel;
+protected:
     QDN_ADC& adc;
 };
 

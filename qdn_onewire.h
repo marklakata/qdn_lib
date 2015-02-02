@@ -61,6 +61,8 @@
 #define ONEWIRE_CRC16 1
 #endif
 
+class QDN_Pin_AltFunc;
+
 ///
 /// A class that acts an physical interface class to all 1-wire devices
 ///
@@ -86,7 +88,7 @@ private:
 
   uint8_t numDevices;
 public:
-    QDN_OneWire(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin);
+    QDN_OneWire(const QDN_Pin_AltFunc& pin);
     void Init();
 
     void Input();

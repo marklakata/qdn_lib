@@ -37,13 +37,14 @@
 #include "stm32f10x.h"
 #include "qdn_xos.h"
 #include "qdn_util.h"
+#include "qdn_gpio.h"
 
 #define delayMicroseconds(x) XOS_Delay100Ns ((x)*10)
 
 
-QDN_OneWire::QDN_OneWire(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)
-  : m_Port(GPIOx)
-  , m_BitMask( GPIO_Pin)
+QDN_OneWire::QDN_OneWire(const QDN_Pin_AltFunc& pin)
+  : m_Port(pin.GetGPIO())
+  , m_BitMask( pin.GetPinMask())
   , numDevices(0)
 {
 

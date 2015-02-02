@@ -82,7 +82,7 @@ void  QDN_Pin::HighSpeedInit() {
 	}
 }
 
-const QDN_Pin::Port QDN_Pin::GetPort() const
+QDN_Pin::Port QDN_Pin::GetPort() const
 {
 #ifdef STM32F10X_XL
 	uint32_t offset = reinterpret_cast<uint32_t>(gpio) - reinterpret_cast<uint32_t>(GPIOA);
@@ -246,7 +246,7 @@ QDN_GPIO_InputN::QDN_GPIO_InputN(GPIO_TypeDef* gpio0, int pin0)
 
 ///////////////////////////////////////////////////////////////////
 
-QDN_ExternalInterrupt::QDN_ExternalInterrupt(GPIO_TypeDef* gpio0, int pin0)
+QDN_ExtInterrupt::QDN_ExtInterrupt(GPIO_TypeDef* gpio0, int pin0)
 : QDN_InputPin(gpio0,pin0, GPIO_Mode_IN_FLOATING,1)
 {
 
@@ -258,13 +258,13 @@ static ISR_t ext2_IRQHandler;
 static ISR_t ext3_IRQHandler;
 static ISR_t ext4_IRQHandler;
 
-QDN_ExternalInterrupt& QDN_ExternalInterrupt::SetCallback(ISR_t callback)
+QDN_ExtInterrupt& QDN_ExtInterrupt::SetCallback(ISR_t callback)
 {
     ext0_IRQHandler = callback;
     return *this;
 }
 
-void QDN_ExternalInterrupt::Init()
+void QDN_ExtInterrupt::Init()
 {
     QDN_Pin::Init();
 
@@ -288,13 +288,13 @@ void QDN_ExternalInterrupt::Init()
     NVIC_Init(&NVIC_InitStructure);
 }
 
-void QDN_ExternalInterrupt::Enable()
+void QDN_ExtInterrupt::Enable()
 {
 //    EXTI->RTSR |= pinMask;
     EXTI->IMR |= pinMask;
 }
 
-void QDN_ExternalInterrupt::Disable()
+void QDN_ExtInterrupt::Disable()
 {
 //    EXTI->RTSR &= ~pinMask;
     EXTI->IMR &= ~pinMask;

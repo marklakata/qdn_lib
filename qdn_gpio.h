@@ -74,9 +74,10 @@ public:
 	{
 		return (static_cast<int>(GetPort())<< 8) | pinNum;
 	}
-	const Port GetPort() const;
-	const GPIO_TypeDef* GetGPIO() const { return gpio;}
-	const int GetPinNum() const { return pinNum;}
+	Port          GetPort() const;
+	GPIO_TypeDef* GetGPIO() const { return gpio;}
+	int           GetPinNum() const { return pinNum;}
+        uint16_t      GetPinMask() const { return pinMask;}
 	void SetMode(MODE_t mode0) { mode = mode0; }
 protected:
 	GPIO_TypeDef* gpio;
@@ -85,6 +86,15 @@ protected:
 
 protected:
 	MODE_t mode;
+};
+
+class QDN_Pin_AltFunc : public QDN_Pin
+{
+public:
+    QDN_Pin_AltFunc(GPIO_TypeDef* gpio0, int pin0) : QDN_Pin(gpio0,pin0,GPIO_Mode_AF_OD)
+    {
+
+    }
 };
 
 class QDN_OutputPin: public QDN_Pin
@@ -171,15 +181,16 @@ public:
 };
 
 
-class QDN_ExternalInterrupt : public QDN_InputPin
+class QDN_ExtInterrupt : public QDN_InputPin
 {
 public:
-	QDN_ExternalInterrupt(GPIO_TypeDef* gpio0, int pin0);
-	QDN_ExternalInterrupt& SetCallback(ISR_t callback);
+	QDN_ExtInterrupt(GPIO_TypeDef* gpio0, int pin0);
+	QDN_ExtInterrupt& SetCallback(ISR_t callback);
 	void Enable();
 	void Disable();
 	void Init();
 };
 
+#define QDN_NoConnect(gpio,pin) /* nothing !*/
 
 #endif

@@ -105,22 +105,6 @@ GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_AN;
 
 }
 
-void  QDN_ADC_Pin::Init() {
-	((QDN_Pin*)this)->Init();
-#ifdef STM32F10X_XL
-	if (adc.adc == ADC1) {
-		RCC->APB2ENR |= (RCC_APB2Periph_ADC1);
-	} else if (adc.adc == ADC2) {
-		RCC->APB2ENR |= (RCC_APB2Periph_ADC2);
-	} else if (adc.adc == ADC3) {
-		RCC->APB2ENR |= (RCC_APB2Periph_ADC3);
-	} else {
-		QDN_Exception();
-	}
-#else
-#error
-#endif
-}
 #endif
 
 QDN_ADC::QDN_ADC(int unit)
@@ -143,6 +127,20 @@ static void dmaDone(void)
 
 void QDN_ADC::Configure()
 {
+#ifdef STM32F10X_XL
+        if (adc == ADC1) {
+                RCC->APB2ENR |= (RCC_APB2Periph_ADC1);
+        } else if (adc == ADC2) {
+                RCC->APB2ENR |= (RCC_APB2Periph_ADC2);
+        } else if (adc == ADC3) {
+                RCC->APB2ENR |= (RCC_APB2Periph_ADC3);
+        } else {
+                QDN_Exception();
+        }
+#else
+#error
+#endif
+
     ADC_InitTypeDef ADC_InitStructure;
     ADC_StructInit(&ADC_InitStructure);
     ADC_InitStructure.ADC_Mode               = ADC_Mode_Independent;
@@ -154,6 +152,7 @@ void QDN_ADC::Configure()
     ADC_Init(adc, &ADC_InitStructure);
     EnableAndCalibrate();
 }
+
 
 void QDN_ADC::DMA_Configure(QDN_DMA& dma, volatile uint16_t* destinationPtr, const std::vector<const QDN_ADC_Pin*>& adcList)
 {
@@ -193,6 +192,10 @@ void QDN_ADC::EnableTempSensor()
     ADC_TempSensorVrefintCmd(ENABLE);
 }
 
+void QDN_ADC::Enable()
+{
+    ADC_Cmd(adc, ENABLE);
+}
 
 void QDN_ADC::EnableAndCalibrate()
 {
@@ -209,6 +212,7 @@ uint16_t QDN_ADC_Pin::ReadOnce()
     ADC_RegularChannelConfig(adc.adc, Channel, 1, ADC_SampleTime_239Cycles5);
     ADC_ClearFlag(adc.adc, ADC_FLAG_EOC);
     ADC_SoftwareStartConvCmd(adc.adc, ENABLE);
-    while(ADC_GetSoftwareStartConvStatus(adc.adc) != SET) { }
+    while(ADC_GetFlagStatus(ADC1, ADC_FLAG_EOC) == RESET);
     return ADC_GetConversionValue(adc.adc);
 }
+
