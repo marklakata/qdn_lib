@@ -82,3 +82,50 @@ uint8_t XOS_FixedQueueReceiveTimedEx(XOS_FixedQueue_t* queue,void* pElement,uint
 }
 
 
+#include <stm32f10x.h>
+#include <core_cm3.h>
+
+static volatile uint32_t systicks;
+
+/**
+ * @brief  This function handles SysTick Handler.
+ * @param  None
+ * @retval None
+ */
+void SysTick_Handler(void)
+{
+    systicks++;
+}
+
+/**
+ * @brief  Returns current value of systicks
+ * @param  None
+ * @retval Milliseconds since boot
+ */
+uint32_t XOS_GetTime32(void)
+{
+    return systicks;
+}
+
+/**
+ * @brief  blocks execution for some time
+ * @param  ms : the number of milliseconds to wait
+ * @retval None
+ */
+void XOS_DelayMs(uint32_t ms)
+{
+    uint32_t t0 = XOS_GetTime32();
+    while (XOS_MillisecondElapsedU32(t0) < ms)
+        ;
+
+}
+
+
+void XOS_Delay100Ns(uint16_t count)
+{
+    volatile uint32_t limit = DWT->CYCCNT;
+    // assume 72 MHz, round up to 80 MHz and divide by 10 to get a factor of 8
+    limit += count * 8;
+    while (DWT->CYCCNT < limit)
+        ;
+}

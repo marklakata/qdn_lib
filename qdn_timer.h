@@ -98,5 +98,29 @@ private:
 
 };
 
+class QDN_Delay
+{
+public:
+    /**
+     * @brief Inserts a delay time in uS.
+     * @param delay_us: specifies the delay time in micro second.
+     * @retval None
+     */
+    #define STM32_SYSCLK 72000000
+    static void DelayUs(uint32_t delay_us)
+    {
+        uint32_t nb_loop;
+        nb_loop = (((STM32_SYSCLK / 1000000)/4)*delay_us)+1; /* uS (divide by 4 because each loop take about 4 cycles including nop +1 is here to avoid delay of 0 */
+        asm volatile(
+                "1: " "\n\t"
+                " nop " "\n\t"
+                " subs.w %0, %0, #1 " "\n\t"
+                " bne 1b " "\n\t"
+                : "=r" (nb_loop)
+                : "0"(nb_loop)
+                : "r3"
+        );
+    }
+};
 
 #endif
