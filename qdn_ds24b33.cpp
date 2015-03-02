@@ -43,7 +43,7 @@
 
 #define FAMILY_CODE 0x23
 
-#define SCRATCH_SIZE 32
+
 #define MAX_READ_BUF 512
 
 

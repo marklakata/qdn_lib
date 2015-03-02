@@ -56,6 +56,8 @@ private:
     bool Startup();
 
 public:
+    const static uint32_t SCRATCH_SIZE = 32;
+
     QDN_DS24B33_EEPROM(QDN_OneWire& owire0);
     static bool IsEEPROM(const uint64_t& romCode);
     void SelectRomCode(const uint64_t& romCode);
