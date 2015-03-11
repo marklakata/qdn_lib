@@ -59,6 +59,9 @@ protected:
 public:
     void Start();
     void Stop();
+    void EnableIRQ();
+    bool DisableIRQ();            ///> Returns the previous state of the interrupts before disabling
+    void RestoreIRQ(bool state); ///> Returns the IRQ enable to the state before disabling.
 
 protected:
 #ifdef STM32F10X_XL

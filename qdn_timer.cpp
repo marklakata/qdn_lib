@@ -117,6 +117,25 @@ void QDN_Timer::Stop()
     timer->CR1 &= (uint16_t)(~((uint16_t)TIM_CR1_CEN));
 }
 
+void QDN_Timer::EnableIRQ()
+{
+    timer->DIER |= TIM_DIER_UIE;
+}
+
+void QDN_Timer::RestoreIRQ(bool state)
+{
+    if (state)
+        timer->DIER |=  TIM_DIER_UIE;
+    else
+        timer->DIER &= ~TIM_DIER_UIE;
+}
+
+bool QDN_Timer::DisableIRQ()
+{
+   bool flag = !! (timer->DIER & TIM_DIER_UIE);
+   timer->DIER &= (uint16_t)~TIM_DIER_UIE;
+   return flag;
+}
 
 
 typedef void (*ISR_t)(void);
@@ -316,7 +335,7 @@ void QDN_EventGenerator::Init()
 void QDN_EventGenerator::Start()
 {
     QDN_Timer::Start();
-    TIM_ITConfig(timer, TIM_IT_Update, ENABLE);
+    EnableIRQ();
 
 #if 0
     TIM_GenerateEvent(timer,TIM_EventSource_Update);
