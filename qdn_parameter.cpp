@@ -32,7 +32,6 @@
 #include "qdn_flash.h" // generic flash interface
 #include "qdn_util.h"
 
-//#include "memory_map.h"
 #include <string.h>
 #include "qdn_project.h"
 
