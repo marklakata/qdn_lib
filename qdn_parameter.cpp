@@ -559,7 +559,12 @@ extern "C"  void QDN_ParamSetFloatRaw(uint16_t index, float value) {
 
 extern "C"  void  QDN_ParamSetString(uint16_t firstIndex, uint16_t lastIndex, const char* buffer, uint32_t length)
 {
-	for(uint16_t index=firstIndex;index<=lastIndex;index++)
+     QDN_ParamSetStringWithStride(firstIndex, lastIndex, buffer,  length, 1);
+}
+
+extern "C"  void  QDN_ParamSetStringWithStride(uint16_t firstIndex, uint16_t lastIndex, const char* buffer, uint32_t length, int stride)
+{
+	for(uint16_t index=firstIndex;index<=lastIndex;index+= stride)
 	{
 		int32_t ivalue = 0;
 		if (length >0)
@@ -604,10 +609,26 @@ extern "C" float QDN_ParamFloat(uint16_t index) {
 }
 
 // maxChars includes trailing null
-extern "C" int QDN_ParamString(uint16_t index, char* buffer, int32_t maxChars) {
+extern "C" int QDN_ParamString(uint16_t index, char* buffer, int32_t maxChars)
+{
     if (maxChars < 1) return 1;
     char* ptr = (char*) &parameter[index];
     strncpy(buffer,ptr,maxChars-1);
+    buffer[maxChars-1] = 0;
+    return 0;
+}
+
+// maxChars includes trailing null
+extern "C" int QDN_ParamStringWithStride(uint16_t index, char* buffer, int32_t maxChars, int stride) {
+    if (maxChars < 1) return 1;
+    int written  = 0;
+    while(written < maxChars - 1)
+    {
+        char* ptr = (char*) &parameter[index];
+        strncpy(buffer + written,ptr,sizeof(int32_t));
+        index += stride;
+        written += sizeof(int32_t);
+    }
     buffer[maxChars-1] = 0;
     return 0;
 }
