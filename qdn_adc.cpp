@@ -128,15 +128,36 @@ static void dmaDone(void)
 void QDN_ADC::Configure()
 {
 #ifdef STM32F10X_XL
-        if (adc == ADC1) {
-                RCC->APB2ENR |= (RCC_APB2Periph_ADC1);
-        } else if (adc == ADC2) {
-                RCC->APB2ENR |= (RCC_APB2Periph_ADC2);
-        } else if (adc == ADC3) {
-                RCC->APB2ENR |= (RCC_APB2Periph_ADC3);
-        } else {
-                QDN_Exception();
-        }
+    // reset
+    if (adc == ADC1) {
+            RCC->APB2RSTR |= (RCC_APB2Periph_ADC1);
+    } else if (adc == ADC2) {
+            RCC->APB2RSTR |= (RCC_APB2Periph_ADC2);
+    } else if (adc == ADC3) {
+            RCC->APB2RSTR |= (RCC_APB2Periph_ADC3);
+    } else {
+            QDN_Exception();
+    }
+    // unreset
+    if (adc == ADC1) {
+            RCC->APB2RSTR &= ~(RCC_APB2Periph_ADC1);
+    } else if (adc == ADC2) {
+            RCC->APB2RSTR &= ~(RCC_APB2Periph_ADC2);
+    } else if (adc == ADC3) {
+            RCC->APB2RSTR &= ~(RCC_APB2Periph_ADC3);
+    } else {
+            QDN_Exception();
+    }
+    // enable
+    if (adc == ADC1) {
+            RCC->APB2ENR |= (RCC_APB2Periph_ADC1);
+    } else if (adc == ADC2) {
+            RCC->APB2ENR |= (RCC_APB2Periph_ADC2);
+    } else if (adc == ADC3) {
+            RCC->APB2ENR |= (RCC_APB2Periph_ADC3);
+    } else {
+            QDN_Exception();
+    }
 #else
 #error
 #endif
