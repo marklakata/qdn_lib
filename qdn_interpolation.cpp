@@ -37,7 +37,7 @@
 #include "qdn_interpolation.h"
 
 #ifndef ADC_SIZE
-#error please define ADC_SIZE in your project.h. Should be the bit width of the ADC, assuming it is right-aligned.
+#error please define ADC_SIZE in your qdn_project.h. Should be the bit width of the ADC, assuming it is right-aligned.
 #endif
 
 
