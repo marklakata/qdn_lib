@@ -96,6 +96,9 @@ public:
     uint8_t ReadPin();
     void WriteHigh();
     void WriteLow();
+
+    /// returns 1 if a device is found
+    /// returns 0 if no devices are found
     uint8_t Reset();
 
 

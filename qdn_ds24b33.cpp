@@ -87,6 +87,8 @@ bool QDN_DS24B33_EEPROM::Startup()
     return present;
 }
 
+/// returns true is the write is successful (and verified)
+/// return false if the write fails or does not verify
 bool QDN_DS24B33_EEPROM::WriteEEPROM(  uint16_t address, const uint8_t* data, uint16_t len)
 {
     uint16_t toGo = len;
@@ -114,6 +116,8 @@ bool QDN_DS24B33_EEPROM::WriteEEPROM(  uint16_t address, const uint8_t* data, ui
     return r;
 }
 
+/// returns true on read success
+/// returns false on read failure
 bool QDN_DS24B33_EEPROM::ReadEEPROM(  uint16_t address,  uint8_t* dst,  uint16_t len)
 {
     uint16_t toGo = len;
