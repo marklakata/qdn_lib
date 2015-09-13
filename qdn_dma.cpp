@@ -267,8 +267,12 @@ extern "C" void DMA2_Channel4_5_IRQHandler(void)
 }
 
 
-QDN_DMA& QDN_DMA::SetCallback(ISR_t callback)
+QDN_DMA& QDN_DMA::SetCallback(ISR_t callback, uint8_t preemptionPriority, uint8_t subPriority)
 {
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = preemptionPriority; // NVIC_PRIORITY_DEFAULT;
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority        = subPriority;
+
+
     if (dmaChannel == DMA1_Channel1)
     {
         NVIC_InitStructure.NVIC_IRQChannel = DMA1_Channel1_IRQn;

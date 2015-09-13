@@ -43,7 +43,7 @@ public:
     QDN_DMA(QDN_SPI& spi, bool tx = false);
 #if 1
     void Init();
-    QDN_DMA& SetCallback(ISR_t callback);
+    QDN_DMA& SetCallback(ISR_t callback, uint8_t preemptionPriority, uint8_t subPriority);
     QDN_DMA& SetMemory(volatile uint16_t* dst, uint32_t numTransfers, uint32_t unitSize);
     void Enable();
     void DisableAndRearm();

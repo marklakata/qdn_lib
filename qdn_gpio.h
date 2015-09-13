@@ -185,10 +185,12 @@ class QDN_ExtInterrupt : public QDN_InputPin
 {
 public:
 	QDN_ExtInterrupt(GPIO_TypeDef* gpio0, int pin0);
-	QDN_ExtInterrupt& SetCallback(ISR_t callback);
+	QDN_ExtInterrupt& SetCallback(ISR_t callback, uint8_t preemptionPriority, uint8_t subPriority);
 	void Enable();
 	void Disable();
 	void Init();
+private:
+        NVIC_InitTypeDef NVIC_InitStructure;
 };
 
 #define QDN_NoConnect(gpio,pin) /* nothing !*/

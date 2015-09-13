@@ -154,20 +154,20 @@ ISR_t tim5Callback = QDN_NotDefinedException;
 ISR_t tim6Callback = QDN_NotDefinedException;
 ISR_t tim7Callback = QDN_NotDefinedException;
 
-void QDN_Timer::SetCallback(void (*function)(void))
+void QDN_Timer::AssignCallback(void (*function)(void))
 {
 #define CASE(x) case reinterpret_cast<uint32_t>(x)
-	switch((uint32_t)timer)
-	{
-	CASE (TIM2): tim2Callback = function; break;
-	CASE (TIM3): tim3Callback = function; break;
-	CASE (TIM4): tim4Callback = function; break;
-	CASE (TIM5): tim5Callback = function; break;
-	CASE (TIM6): tim6Callback = function; break;
-	CASE (TIM7): tim7Callback = function; break;
-	default:
-		QDN_Exception("not supported");
-	}
+    switch((uint32_t)timer)
+    {
+    CASE (TIM2): tim2Callback = function; break;
+    CASE (TIM3): tim3Callback = function; break;
+    CASE (TIM4): tim4Callback = function; break;
+    CASE (TIM5): tim5Callback = function; break;
+    CASE (TIM6): tim6Callback = function; break;
+    CASE (TIM7): tim7Callback = function; break;
+    default:
+            QDN_Exception("not supported");
+    }
 #undef CASE
 }
 
@@ -296,7 +296,7 @@ QDN_PulseGenerator& QDN_PulseGenerator::SetDutyCycle(float fraction)
 ////////////////////////////////////////////////////////////////////////////////
 
 QDN_EventGenerator::QDN_EventGenerator(int timerId)
-    : QDN_Timer(timerId)
+    : QDN_EventGenerator(timerId, nullptr)
 {
 }
 
@@ -304,6 +304,16 @@ QDN_EventGenerator::QDN_EventGenerator(int timerId, void (*function0)(void))
     : QDN_Timer(timerId)
     , function(function0)
 {
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = NVIC_PRIORITY_DEFAULT;
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;
+    NVIC_InitStructure.NVIC_IRQChannelCmd = DISABLE;
+}
+
+QDN_EventGenerator& QDN_EventGenerator::SetCallback(void (*function)(void),uint8_t preemptionPriority, uint8_t subPriority)
+{
+    NVIC_InitStructure.NVIC_IRQChannelCmd = (function!=nullptr)?ENABLE : DISABLE;
+    QDN_Timer::AssignCallback(function);
+    return * this;
 }
 
 void QDN_EventGenerator::Init()
@@ -311,7 +321,6 @@ void QDN_EventGenerator::Init()
     QDN_Timer::Init();
     TIM_TimeBaseInit(timer, &baseInit);
 
-    NVIC_InitTypeDef NVIC_InitStructure;
 #define CASE(x) case reinterpret_cast<uint32_t>(x)
     switch((uint32_t)timer)
     {
@@ -326,9 +335,6 @@ void QDN_EventGenerator::Init()
     }
 #undef CASE
 
-    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = NVIC_PRIORITY_DEFAULT;
-    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;
-    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
     NVIC_Init(&NVIC_InitStructure);
 }
 

@@ -55,7 +55,7 @@ protected:
 #endif
 	void Init();
 	void SetFrequencyHerz(float freq);
-    void SetCallback(void (*function)(void));
+    void AssignCallback(void (*function)(void));
 public:
     void Start();
     void Stop();
@@ -79,10 +79,11 @@ public:
 	QDN_EventGenerator(int timerId, void (*function0)(void));
 	void Init();
 	QDN_EventGenerator& SetFrequencyHerz(float freq)        { QDN_Timer::SetFrequencyHerz(freq); return *this; }
-	QDN_EventGenerator& SetCallback(void (*function)(void)) { QDN_Timer::SetCallback(function); return * this; }
+	QDN_EventGenerator& SetCallback(void (*function)(void),uint8_t preemptionPriority, uint8_t subPriority);
 	void Start(void);
 private:
 	void (*function)(void);
+        NVIC_InitTypeDef NVIC_InitStructure;
 };
 
 class QDN_PulseGenerator : public QDN_Timer

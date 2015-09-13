@@ -249,7 +249,9 @@ QDN_GPIO_InputN::QDN_GPIO_InputN(GPIO_TypeDef* gpio0, int pin0)
 QDN_ExtInterrupt::QDN_ExtInterrupt(GPIO_TypeDef* gpio0, int pin0)
 : QDN_InputPin(gpio0,pin0, GPIO_Mode_IN_FLOATING,1)
 {
-
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = NVIC_PRIORITY_DEFAULT;
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority        = 0x0F;
+    NVIC_InitStructure.NVIC_IRQChannelCmd                = DISABLE;
 }
 
 static ISR_t ext0_IRQHandler;
@@ -258,8 +260,11 @@ static ISR_t ext2_IRQHandler;
 static ISR_t ext3_IRQHandler;
 static ISR_t ext4_IRQHandler;
 
-QDN_ExtInterrupt& QDN_ExtInterrupt::SetCallback(ISR_t callback)
+QDN_ExtInterrupt& QDN_ExtInterrupt::SetCallback(ISR_t callback, uint8_t preemptionPriority, uint8_t subPriority)
 {
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = preemptionPriority;
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority        = subPriority;
+    NVIC_InitStructure.NVIC_IRQChannelCmd                = ENABLE;
     ext0_IRQHandler = callback;
     return *this;
 }
@@ -280,11 +285,7 @@ void QDN_ExtInterrupt::Init()
     EXTI_InitStructure.EXTI_LineCmd = ENABLE;
     EXTI_Init(&EXTI_InitStructure);
 
-    NVIC_InitTypeDef   NVIC_InitStructure;
     NVIC_InitStructure.NVIC_IRQChannel                   = EXTI0_IRQn + pinNum;
-    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = NVIC_PRIORITY_DEFAULT;
-    NVIC_InitStructure.NVIC_IRQChannelSubPriority        = 0x0F;
-    NVIC_InitStructure.NVIC_IRQChannelCmd                = ENABLE;
     NVIC_Init(&NVIC_InitStructure);
 }
 

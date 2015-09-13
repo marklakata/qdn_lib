@@ -128,7 +128,9 @@ void QDN_VectorInit(void)
     }
     
     SCB->VTOR = (base | offset); //     NVIC_SetVectorTable(base, offset );
-    NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4);
+
+    /// this enables 4 preemption priorities (0-3) and 4 subpriorities (0-3)
+    NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
 }
 
 ////////////////////////////////////////////////
