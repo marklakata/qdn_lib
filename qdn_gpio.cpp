@@ -128,7 +128,7 @@ void QDN_GPIO_Output::Init( ) {
 bool QDN_OutputPin::IsAsserted() const
 {
 	if (gpio) {
-		return (!!(gpio->ODR & pinMask)) == polarity;
+		return (!!(gpio->ODR & pinMask)) == polarity_;
 	} else {
 		return false;
 	}

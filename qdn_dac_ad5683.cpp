@@ -29,46 +29,51 @@
  **************************************************************************/
 
 
-#include "qdn_dac_mcp4822.h"
+#include "qdn_dac_ad5683.h"
 #include "qdn_gpio.h"
 #include "qdn_spi.h"
 
-#define DAC_CHAN_A  0x0000
-#define DAC_CHAN_B  0x8000
+static const uint8_t NOP = 0x0;
+static const uint8_t WriteInputRegister = 0x10;
+static const uint8_t UpdateDacRegister = 0x20;
+static const uint8_t WriteDacAndInputRegister = 0x30;
+static const uint8_t WriteControlRegister = 0x40;
+static const uint8_t ReadbackInputRegister = 0x50;
 
-// mask 0x4000 is don't care
-
-#define GAIN_1X     0x2000
-#define GAIN_2X     0x0000
-
-#define OPERATING   0x1000
-#define SHUTDOWN    0x0000
+static const uint16_t ControlReset = 0x8000;
+static const uint16_t ControlPD1   = 0x4000;
+static const uint16_t ControlPD0   = 0x2000;
+static const uint16_t ControlRef   = 0x1000;
+static const uint16_t ControlGain  = 0x0800;
+static const uint16_t ControlDCEN  = 0x0400;
 
 
 
 static QDN_OutputPin noConnect(false);
 
-QDN_DAC_MCP4822::QDN_DAC_MCP4822(QDN_SPI& spi0, QDN_GPIO_OutputN& cs0)
+QDN_DAC_AD5683::QDN_DAC_AD5683(QDN_SPI& spi0, QDN_GPIO_OutputN& cs0)
 	: spi(spi0)
 	, cs(cs0)
 	, ldac(noConnect)
-	, gainCommand(GAIN_1X)
+//	, gainCommand(GAIN_1X)
 
 {
 
 }
 
-QDN_DAC_MCP4822::QDN_DAC_MCP4822(QDN_SPI& spi0, QDN_GPIO_OutputN& cs0, QDN_OutputPin& ldac0)
+#if 0
+QDN_DAC_AD5683::QDN_DAC_AD5683(QDN_SPI& spi0, QDN_GPIO_OutputN& cs0, QDN_OutputPin& ldac0)
 	: spi(spi0)
 	, cs(cs0)
 	, ldac(ldac0)
-	, gainCommand(GAIN_1X)
+//	, gainCommand(GAIN_1X)
 
 {
 
 }
+#endif
 
-void QDN_DAC_MCP4822::Init(void)
+void QDN_DAC_AD5683::Init(void)
 {
 	cs.Init();
 	ldac.Init();
@@ -80,15 +85,13 @@ void QDN_DAC_MCP4822::Init(void)
 //		.SetClockPhase(spi.ClockPhase::SecondEdge)
 		.Init();
 
-	SetGain(Gain::Gain1X);
-	SetOutput(Channel::ChannelA,0);
-	SetOutput(Channel::ChannelB,0);
+	Write(WriteControlRegister,ControlReset);
 }
 
 
 
-
-QDN_DAC_MCP4822& QDN_DAC_MCP4822::SetGain(const QDN_DAC_MCP4822::Gain gain)
+#if 0
+QDN_DAC_AD5683& QDN_DAC_AD5683::SetGain(const QDN_DAC_AD5683::Gain gain)
 {
 	if (gain == Gain::Gain1X)
 	{
@@ -98,54 +101,39 @@ QDN_DAC_MCP4822& QDN_DAC_MCP4822::SetGain(const QDN_DAC_MCP4822::Gain gain)
 	}
 	return *this;
 }
+#endif
 
 
-void QDN_DAC_MCP4822::WriteCommand(const uint16_t command)
+void QDN_DAC_AD5683::Write(const uint8_t command, const uint16_t db)
 {
 	cs.Assert();
-	spi.WriteReadU8((command >> 8) & 0xFF);
-	spi.WriteReadU8(command & 0xFF);
+	spi.WriteReadU8(command | (db >> 12));
+	spi.WriteReadU8((db >> 4) & 0xFF);
+        spi.WriteReadU8((db << 4) & 0xFF);
 	cs.Deassert();
 	ldac.Assert();
 	ldac.Deassert();
 }
 
-int16_t QDN_DAC_MCP4822::HighZ(void)
+#if 0
+int16_t QDN_DAC_AD5683::HighZ(void)
 {
 	WriteCommand(SHUTDOWN);
 	return 0;
 }
+#endif
 
-int16_t QDN_DAC_MCP4822::SetOutput(const QDN_DAC_MCP4822::Channel channel, const uint16_t count )
+int16_t QDN_DAC_AD5683::SetOutputImmediately(const uint16_t count )
 {
-    uint16_t command = 0;
+//    Write(WriteDacAndInputRegister,count);
+    Write(WriteInputRegister,count);
+    counts_ = count;
 
-	if (channel == Channel::ChannelA)
-	{
-		command |= DAC_CHAN_A;
-	} else if (channel == Channel::ChannelB)
-	{
-		command |= DAC_CHAN_B;
-	} else {
-		return -1;
-	}
-
-	if (count > 0x0FFF)
-	{
-		return -2;
-	}
-
-	command |= gainCommand;
-	command |= OPERATING;
-	command |= count;
-
-	WriteCommand(command);
-	counts[static_cast<int>(channel)] = count;
-
-	return 0;
+    return 0;
 }
 
-uint16_t QDN_DAC_MCP4822::GetOutput(const QDN_DAC_MCP4822::Channel channel)
+uint16_t QDN_DAC_AD5683::GetOutput()
 {
-    return counts[static_cast<int>(channel)];
+    return counts_;
 }
+
