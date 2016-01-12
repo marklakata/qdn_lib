@@ -29,6 +29,9 @@
  **************************************************************************/
 
 #include <stdint.h>
+#ifdef __cplusplus
+#include <functional>
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -60,4 +63,5 @@ void    QDN_ParamErase(uint16_t index);
 
 #ifdef __cplusplus
 const int32_t& QDN_ParamRef(uint16_t index);
+void    QDN_ParamInitWithCallback(std::function<void(uint8_t)> errorCallback);
 #endif

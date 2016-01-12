@@ -38,7 +38,7 @@
 
 static  int32_t    parameter[NUM_PARAMETERS] = {0};
 static  Callback_t callbacks[NUM_PARAMETERS] = {0};
-static  uint8_t    statusx[(NUM_PARAMETERS+3)/4] = {0};
+static  uint8_t    statusx[(NUM_PARAMETERS+3)/4] = {0}; // 2 bits per parameter
 typedef uint32_t   ParamIndex_t;
 
 #define STATUS_UNKNOWN     0
@@ -106,6 +106,8 @@ typedef uint32_t   ParamIndex_t;
 #error
 #endif
 
+#define MULTIPAGE
+
 class ParamOverride_t {
 public:
     uint32_t value;
@@ -114,7 +116,12 @@ public:
     uint8_t checksum;
     
     bool ValidateChecksum(void) {
-        if (command == COMMAND_COOKIE) {
+#ifdef MULTIPAGE
+        if (command == COMMAND_PARAM )
+#else
+        if (command == COMMAND_COOKIE)
+#endif
+        {
             return (CalcChecksum() == checksum);
         } else {
             return false;
@@ -124,7 +131,11 @@ public:
     bool IsEOF() {
         return (command == COMMAND_EOF && index == U16_ERASED && value == U32_ERASED);
     }
-    
+#ifdef MULTIPAGE
+    bool IsCopyInProgress() {
+        return (command == COMMAND_COPY_IN_PROGRESS && index == U16_ERASED);
+    }
+#endif
 
 public:
     void Zero(uint32_t address) {
@@ -149,6 +160,17 @@ public:
 #endif
     }
     
+#ifdef MULTIPAGE
+    /*lint -e{662} inhibit complaints about size being wrong */
+    void WriteParamToFlash(MemoryAddress_t address) {
+        command = COMMAND_PARAM;
+        checksum = CalcChecksum();
+
+        // the command/checksum is the last half-word written, so that the value and index can not be
+        // confirmed until the command/checksum is written
+        FlashWriteArray(address,(uint8_t*)this,sizeof(ParamOverride_t));
+    }
+#else
     /*lint -e{662} inhibit complaints about size being wrong */
     void WriteFlash(MemoryAddress_t address) {
         command = COMMAND_COOKIE;
@@ -158,11 +180,17 @@ public:
         // confirmed until the command/checksum is written
         FlashWriteArray(address,(uint8_t*)this,sizeof(ParamOverride_t));
     }
+#endif
 
     enum {
-        COMMAND_INVALID         = U8_INVALID, // 00000000
-        COMMAND_COOKIE          = 0xB0, // 10110000
-        COMMAND_EOF             = U8_ERASED  // 11111111
+        COMMAND_INVALID          = U8_INVALID, // 00000000
+#ifdef MULTIPAGE
+        COMMAND_PARAM            = 0xB0, // 10110000
+        COMMAND_COPY_IN_PROGRESS = 0x30, // 00110000
+#else
+        COMMAND_COOKIE           = 0xB0, // 10110000
+#endif
+        COMMAND_EOF              = U8_ERASED  // 11111111
     };
 
 private:
@@ -175,9 +203,14 @@ private:
 
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-ParamOverride_t poverride;
+#define MAX_PARAMS_PER_PAGE (FLASH_PAGE_SIZE/sizeof(ParamOverride_t))
 
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+#ifdef MULTIPAGE
+#else
+ParamOverride_t poverride;
+#endif
 
 class ParameterDatabase {
 public:
@@ -238,13 +271,24 @@ public:
         return val;
     }
 
-    void Init(void) {
-        MemoryAddress_t endOfPage;                          
-    
-        uint8_t totalFound = 0; 
-        uint8_t ipage; 
-        uint8_t found[NUM_PARAM_PAGES];
-    
+    void assert_error(uint8_t errorCode)
+    {
+        flashFailed_ = true;
+        errorCallback_(errorCode);
+    }
+
+    ParameterDatabase() :
+        errorCallback_([](uint8_t ec){}) ,
+        flashFailed_(false)
+    {
+
+    }
+
+    void Init(std::function<void(uint8_t)> errorCallback)
+    {
+        errorCallback_ = errorCallback;
+        flashFailed_ = false;
+
 #if 1
         int actPages = (((PARAM_END - PARAM_START) + 1)/(FLASH_PAGE_SIZE));
         int desPages = NUM_PARAM_PAGES;
@@ -257,6 +301,93 @@ public:
     //    HW_ResetWatchdog();
     //    HW_ResetExternalWatchdog();
     
+#ifdef MULTIPAGE
+        // first figure out if any pages have not been fully copied
+        for(uint8_t ipage =0; ipage<NUM_PARAM_PAGES;ipage++)
+        {
+            ParamOverride_t pov;
+
+            // look at last record of page
+            FlashReadArray((ipage * FLASH_PAGE_SIZE)+PARAM_START + FLASH_PAGE_SIZE - sizeof(pov),reinterpret_cast<uint8_t*>(&pov),sizeof(pov));
+            if  (pov.IsCopyInProgress())
+            {
+                uint8_t targetPage = pov.value;
+
+                if (targetPage < NUM_PARAM_PAGES)
+                {
+                    FlashErasePage((targetPage * FLASH_PAGE_SIZE)+PARAM_START,FLASH_PASSWORD);
+                }
+            }
+        }
+
+   //    HW_ResetWatchdog();
+   //    HW_ResetExternalWatchdog();
+
+        paramNextDefinitionAddress  =0;
+        paramCurrentPage = 0;
+
+       // Now load overrides from flash
+       for(uint8_t ipage =0; ipage<NUM_PARAM_PAGES;ipage++)
+       {
+           uint32_t addr = (ipage * FLASH_PAGE_SIZE)+PARAM_START;
+
+           // process all parameter records
+           for(uint32_t iparam =0;iparam < MAX_PARAMS_PER_PAGE ;iparam++)
+           {
+               ParamOverride_t pov;
+               // load the next override object
+               FlashReadArray(addr,reinterpret_cast<uint8_t*>(&pov),sizeof(pov));
+
+               // do something with it
+               switch(pov.command )
+               {
+                   case (ParamOverride_t::COMMAND_EOF ):
+                       if (pov.IsEOF())
+                       {
+                           if (paramNextDefinitionAddress == 0)
+                           {
+                               if (iparam < MAX_PARAMS_PER_PAGE - 1) // NOT the last record. save this for later.
+                               {
+                                   paramNextDefinitionAddress = addr;
+                                   paramCurrentPage = ipage;
+                               }
+                           }
+                           iparam = MAX_PARAMS_PER_PAGE;
+                       }
+
+                       break;
+                   case (ParamOverride_t::COMMAND_PARAM ):
+                       if (pov.ValidateChecksum())
+                       {
+                           if (pov.index <= MAX_PARAMETER_NUMBER )
+                           {
+                               parameter[pov.index] = pov.value;
+                               SetStatus(pov.index,STATUS_MODIFIED);
+                           }
+                       }
+                       break;
+                   case (ParamOverride_t::COMMAND_COPY_IN_PROGRESS ):
+                   case( ParamOverride_t::COMMAND_INVALID ):
+                   default:
+                       // skip this record
+                       break;
+               }
+               addr  += sizeof(pov);
+
+   //        HW_ResetWatchdog();
+   //        HW_ResetExternalWatchdog();
+           }
+        }
+
+       if (paramNextDefinitionAddress == 0)
+       {
+           assert_error(5);
+           return;
+       }
+#else
+        MemoryAddress_t endOfPage;
+        uint8_t totalFound = 0;
+        uint8_t found[NUM_PARAM_PAGES];
         // see how many pages have been written. hopefully only 0 or 1.
         for(ipage =0; ipage<NUM_PARAM_PAGES;ipage++) {
             volatile void* ptr = &poverride;
@@ -290,7 +421,7 @@ public:
         } else if (totalFound == 0) {
             paramCurrentPage = 0;
         }
-            
+
          // Now load overrides from flash
         paramNextDefinitionAddress= ( paramCurrentPage    * FLASH_PAGE_SIZE)+PARAM_START;
         endOfPage                 = ((paramCurrentPage+1) * FLASH_PAGE_SIZE)+PARAM_START;
@@ -333,9 +464,11 @@ public:
     //        HW_ResetExternalWatchdog();
         }
     exitNewParamLoop:
+#endif
         
         return;
     }
+
     void EraseAll(void) {
         uint32_t ipage;
         for(ipage =0; ipage<NUM_PARAM_PAGES;ipage++) {
@@ -357,120 +490,400 @@ private:
         return (statusx[index/4]>>shift)&mask;
     }
         
-    void ParamWriteToFlashWithCleanup(uint16_t num, uint32_t value, uint8_t resetDefaultFlag) {
-       
+#ifdef MULTIPAGE
+    bool PageIsEmpty(uint8_t ipage)
+    {
+        uint32_t addr = (ipage * FLASH_PAGE_SIZE)+PARAM_START;
+
+        ParamOverride_t poverride;
+        FlashReadArray(addr,reinterpret_cast<uint8_t*>(&poverride),sizeof(poverride));
+
+        return (poverride.command == ParamOverride_t::COMMAND_EOF );
+    }
+
+    bool PageCanBeCompressed(uint8_t ipage)
+    {
+        uint32_t keeper = 0;
+        uint32_t addr = (ipage * FLASH_PAGE_SIZE)+PARAM_START;
+
+        // first see if the page is full and can't be garbage collected.
+        for(uint16_t iParam = 0; iParam < MAX_PARAMS_PER_PAGE - 1; iParam++)
+        {
+            ParamOverride_t poverride;
+            // load the next poverride object
+            FlashReadArray(addr,reinterpret_cast<uint8_t*>(&poverride),sizeof(poverride));
+
+            // do something with it
+            switch(poverride.command ) {
+            case (ParamOverride_t::COMMAND_INVALID ):
+                goto endGarbageCollection1;
+            case (ParamOverride_t::COMMAND_EOF ):
+                goto endGarbageCollection1;
+
+            case (ParamOverride_t::COMMAND_PARAM ):
+            default:
+                keeper++;
+                break;
+            }
+            addr += sizeof(ParamOverride_t);
+        }
+
+      endGarbageCollection1:
+        return keeper < MAX_PARAMS_PER_PAGE - 1;
+    }
+
+    uint8_t GetFreeLocationWithGarbageCollection()
+    {
+        uint8_t freePages = 0;
+        uint8_t newPage = 0xFF;
+
+        for(uint8_t ipage =0; ipage<NUM_PARAM_PAGES;ipage++)
+        {
+            if (PageIsEmpty(ipage)) {
+                newPage = ipage;
+                freePages++;
+            }
+        }
+
+        if (freePages == 0)
+        {
+            return 1;
+        }
+
+        // start looking at the next page
+        paramCurrentPage ++;
+
+        if (freePages == 1)
+        {
+            if (newPage == 0xFF)
+            {
+                return 3;
+            }
+
+            // get movable page
+            for(uint8_t ipage2 =0; ipage2<NUM_PARAM_PAGES; ipage2++)
+            {
+                uint8_t ipage = ( ipage2 + paramCurrentPage ) % NUM_PARAM_PAGES;
+
+                if (! PageIsEmpty(ipage) && PageCanBeCompressed(ipage))
+                {
+                    MovePageToPage(ipage, newPage);
+                    paramCurrentPage = newPage;
+                    goto gotNewPage;
+                }
+            }
+
+            // bad thing
+            return 4;
+        }
+
+    gotNewPage:
+        // find a free parameter slot, starting on the currentPage and looking forward, wrapping around if necessary
+        for(uint8_t ipage2 =0; ipage2<NUM_PARAM_PAGES; ipage2++)
+        {
+            uint8_t ipage = ( ipage2 + paramCurrentPage ) % NUM_PARAM_PAGES;
+
+            MemoryAddress_t addr = (ipage * FLASH_PAGE_SIZE)+PARAM_START;
+
+            for(uint16_t iparam=0;iparam < MAX_PARAMS_PER_PAGE - 1 ; iparam++)
+            {
+                ParamOverride_t pov;
+                // load the next ParamOverride_t object
+                FlashReadArray(addr,reinterpret_cast<uint8_t*>(&pov),sizeof(pov));
+                if (pov.command == ParamOverride_t::COMMAND_EOF)
+                {
+                    paramNextDefinitionAddress = addr;
+                    paramCurrentPage = ipage;
+                    return 0;
+                }
+                addr += sizeof(ParamOverride_t);
+            }
+        }
+
+        // this should not happen!
+        return 2;
+
+
+    }
+
+    void MovePageToPage(uint8_t oldPage, uint8_t newPage)
+    {
+        {
+            // mark the old page as "copy in progress" and indicate which page is being written.
+            MemoryAddress_t progressAddress = (oldPage * FLASH_PAGE_SIZE)+PARAM_START + FLASH_PAGE_SIZE - sizeof(ParamOverride_t);
+            ParamOverride_t pov;
+            pov.command = ParamOverride_t::COMMAND_COPY_IN_PROGRESS;
+            pov.value   = newPage;
+            pov.WriteParamToFlash(progressAddress);
+        }
+
+        MemoryAddress_t oldPageAddress = (oldPage * FLASH_PAGE_SIZE)+PARAM_START;
+        MemoryAddress_t newPageAddress = (newPage * FLASH_PAGE_SIZE)+PARAM_START;
+
+        for(uint16_t iparam=0;iparam < MAX_PARAMS_PER_PAGE - 1 ; iparam++)
+        {
+            ParamOverride_t pov;
+            // load the next poverride object
+            FlashReadArray(oldPageAddress,reinterpret_cast<uint8_t*>(&pov),sizeof(pov));
+
+            // do something with it
+            switch(pov.command ) {
+            case (ParamOverride_t::COMMAND_INVALID ):
+                // don't copy
+                break;
+
+            case (ParamOverride_t::COMMAND_EOF ):
+                // done copying
+                goto endGarbageCollection1;
+
+            case (ParamOverride_t::COMMAND_PARAM ):
+                // copy it!
+                pov.WriteParamToFlash(newPageAddress);
+                newPageAddress += sizeof(ParamOverride_t);
+                break;
+
+            default:
+                //don't copy it
+                break;
+            }
+            oldPageAddress += sizeof(ParamOverride_t);
+        }
+
+    endGarbageCollection1:
+        oldPageAddress = (oldPage * FLASH_PAGE_SIZE)+PARAM_START;
+
+        FlashErasePage(oldPageAddress,FLASH_PASSWORD);
+    }
+
+    void ParamWriteToFlashWithCleanup(uint16_t num, uint32_t value, uint8_t resetDefaultFlag)
+    {
+        if (flashFailed_) return;
+
+        // 1. find first free spot
+        // 2. if no free spot, garbage collect until free space found
+        // 3. find page that has existing param, save info if found
+        // 4. append param to ptr
+        // 5. invalidate old parameter
+
+
+        if (paramNextDefinitionAddress == 0)
+        {
+            uint8_t errorCode = GetFreeLocationWithGarbageCollection();
+            if (errorCode != 0)
+            {
+                assert_error(errorCode);
+                return;
+            }
+        }
+
+        uint32_t existParamAddr = 0;
+        ParamOverride_t pov;
+
+        // find existing parameter
+        for(uint8_t ipage =0; ipage<NUM_PARAM_PAGES;ipage++)
+        {
+            uint32_t addr = (ipage * FLASH_PAGE_SIZE)+PARAM_START;
+
+            // read all parameter records, except the last one (the copy in progress indicator)
+            for(uint32_t iparam =0;iparam < MAX_PARAMS_PER_PAGE - 1;iparam++)
+            {
+                // load the next override object
+                FlashReadArray(addr,(uint8_t*)&pov,sizeof(pov));
+                if (pov.index == num && pov.command == ParamOverride_t::COMMAND_PARAM && pov.ValidateChecksum())
+                {
+                    // found it
+                    existParamAddr = addr;
+                    goto foundExistingParam;
+                }
+                if (pov.command == ParamOverride_t::COMMAND_EOF)
+                {
+                    // skip to the next bank
+                    break;
+                }
+                addr += sizeof(ParamOverride_t);
+            }
+        }
+
+     foundExistingParam: ;
+
+        if (!resetDefaultFlag)
+        {
+            if (paramNextDefinitionAddress ==0)
+            {
+                assert_error(6);
+                return;
+            }
+
+            pov.index   = num;
+            pov.value   = value;
     
+            pov.WriteParamToFlash(paramNextDefinitionAddress);
+            paramNextDefinitionAddress += sizeof(ParamOverride_t);
+            if (((paramNextDefinitionAddress - PARAM_START) & (FLASH_PAGE_SIZE-1)) >= sizeof(ParamOverride_t)*(MAX_PARAMS_PER_PAGE-1))
+            {
+                paramNextDefinitionAddress = 0; // clean up next time
+            }
+        }
+        
+        if  (existParamAddr) {
+            pov.Zero(existParamAddr);
+        }
+    }
+            
+#else
+    void ParamWriteToFlashWithCleanup(uint16_t num, uint32_t value, uint8_t resetDefaultFlag)
+    {
+
     // New improved param method.  There are 4 pages. 1 page will support 512/4 = 128 parameters.
     // Only 1 page will be active at any time.
-    // If current page n is full, then 
+    // If current page n is full, then
     //  erase next page  n+1(mod 4)
     //  condense page n to n+1, overwriting new param if found
     //  append new param to page n+1 if not found
     //  set current page to n+1
     // else
     //  nullify new param within page n if found
-    //  append new param to page 
-    
+    //  append new param to page
+
     // on power up, (which is the only time values are read), read all pages, and do any repairs necessary
-    
+
         MemoryAddress_t oldPageAddress;
-    
+
         oldPageAddress             = (paramCurrentPage * FLASH_PAGE_SIZE)+PARAM_START;
-    
+
         // check to see if there is enough space to append new value in this page
-    
+
         if ((paramNextDefinitionAddress - oldPageAddress) >= FLASH_PAGE_SIZE) { // start of a new page
             // time for garbage collection.
-    #define MAX_PARAMS_PER_PAGE (FLASH_PAGE_SIZE/sizeof(ParamOverride_t))
             uint16_t iParam = 0;
             MemoryAddress_t tempAddress;
             uint8_t overriden = 0;
             uint8_t nextPage;
-    
+            bool eraseOldPage = false;
+
             // This condenses the parameter page, removing the 0x00000000 records
             // only copy valid records.
             // if the old param is found, replace it.
-    
+
             nextPage                   = (paramCurrentPage +1)&(NUM_PARAM_PAGES-1);
-    
+
             paramNextDefinitionAddress = (nextPage        * FLASH_PAGE_SIZE)+PARAM_START;
-    
+
             tempAddress = oldPageAddress;
-    
+            uint32_t keeper = 0;
+
+            // first see if the page is full and can't be garbage collected.
             while(1) {
                 ParamOverride_t poverride;
                 // load the next poverride object
                 FlashReadArray(tempAddress,(uint8_t*)&poverride,sizeof(poverride));
-    
+
                 // do something with it
                 switch(poverride.command ) {
                 case (ParamOverride_t::COMMAND_INVALID ):
-                    break;
+                    goto endGarbageCollection1;
                 case (ParamOverride_t::COMMAND_EOF ):
-                    goto endGarbageCollection;
-    
+                    goto endGarbageCollection1;
+
                 case (ParamOverride_t::COMMAND_COOKIE ):
                 default:
                     if (poverride.index == num) {
-                        // found it
-                        if (resetDefaultFlag) {
-                            // skip it, so that it gets erased
-                        } else {
-                            if (!overriden)
-                            {
-                                overriden = 1;
-                                poverride.value = value;
-                                poverride.WriteFlash(paramNextDefinitionAddress);
-                                paramNextDefinitionAddress += sizeof(ParamOverride_t);
-                            }
-                            // else skip it. No point in writing it multiple times
-                        }
+                        goto endGarbageCollection1;
                     } else {
-                        poverride.WriteFlash(paramNextDefinitionAddress);
-                        paramNextDefinitionAddress += sizeof(ParamOverride_t);
+                        keeper++;
                     }
                     break;
                 }
                 tempAddress += sizeof(ParamOverride_t);
                 iParam++;
                 if (iParam >= MAX_PARAMS_PER_PAGE) break;  // only look at one page.
-    //            HW_ResetWatchdog();
-    //            HW_ResetExternalWatchdog();
-            }        
-    
-    
+            }
+
+     endGarbageCollection1:
+
+            if (keeper <= MAX_PARAMS_PER_PAGE)
+            {
+                // page is not full and should be garbage collected.
+                tempAddress = oldPageAddress;
+                iParam = 0;
+                eraseOldPage = true;
+
+                while(1) {
+                    ParamOverride_t poverride;
+                    // load the next poverride object
+                    FlashReadArray(tempAddress,(uint8_t*)&poverride,sizeof(poverride));
+
+                    // do something with it
+                    switch(poverride.command ) {
+                    case (ParamOverride_t::COMMAND_INVALID ):
+                        break;
+                    case (ParamOverride_t::COMMAND_EOF ):
+                        goto endGarbageCollection;
+
+                    case (ParamOverride_t::COMMAND_COOKIE ):
+                    default:
+                        if (poverride.index == num) {
+                            // found it
+                            if (resetDefaultFlag) {
+                                // skip it, so that it gets erased
+                            } else {
+                                if (!overriden)
+                                {
+                                    overriden = 1;
+                                    poverride.value = value;
+                                    poverride.WriteFlash(paramNextDefinitionAddress);
+                                    paramNextDefinitionAddress += sizeof(ParamOverride_t);
+                                }
+                                // else skip it. No point in writing it multiple times
+                            }
+                        } else {
+                            poverride.WriteFlash(paramNextDefinitionAddress);
+                            paramNextDefinitionAddress += sizeof(ParamOverride_t);
+                        }
+                        break;
+                    }
+                    tempAddress += sizeof(ParamOverride_t);
+                    iParam++;
+                    if (iParam >= MAX_PARAMS_PER_PAGE) break;  // only look at one page.
+        //            HW_ResetWatchdog();
+        //            HW_ResetExternalWatchdog();
+                }
+            }
+
     endGarbageCollection:
-        
+
             if (!overriden && !resetDefaultFlag) {
                 ParamOverride_t poverride;
                 poverride.index   = num;
                 poverride.value   = value;
-            
+
                 poverride.WriteFlash(paramNextDefinitionAddress);
                 paramNextDefinitionAddress += sizeof(ParamOverride_t);
             }
             paramCurrentPage = nextPage;
-    
-            FlashErasePage(oldPageAddress,FLASH_PASSWORD);
-    
+
+            if (eraseOldPage)
+            {
+                FlashErasePage(oldPageAddress,FLASH_PASSWORD);
+            }
         } else {
             ParamOverride_t poverride;
             MemoryAddress_t scanAddress;
             ParamIndex_t count = 0;
             MemoryAddress_t staleAddress = 0;
             uint8_t watchdogCounter = 0;
-        
+
             // find any old references, and invalidate them
-    
+
             scanAddress             = oldPageAddress;
-    
+
             while(1) {
                 // load the next override object
                 FlashReadArray(scanAddress,(uint8_t*)&poverride,sizeof(poverride));
-        
+
                 // do something with it
                 switch(poverride.command) {
-        
+
                 case ParamOverride_t::COMMAND_INVALID:
                     break;
                 case ParamOverride_t::COMMAND_EOF:
@@ -496,29 +909,30 @@ private:
                 scanAddress+= sizeof(poverride);
                 count++;
                 if (count > FLASH_PAGE_SIZE/sizeof(ParamOverride_t)) break;
-                
+
                 if (watchdogCounter++ > 50) {
     //                HW_ResetWatchdog();
     //                HW_ResetExternalWatchdog();
                     watchdogCounter = 0;
                 }
             }
-    
+
     foundEndOfParameters:
             if (!resetDefaultFlag) {
                 poverride.index   = num;
                 poverride.value   = value;
-        
+
                 poverride.WriteFlash(paramNextDefinitionAddress);
                 paramNextDefinitionAddress += sizeof(ParamOverride_t);
             }
-    
+
             if  (staleAddress) {
                 poverride.Zero(staleAddress);
             }
         }
-    
+
     }
+#endif
     
     void ParamResetAll(void) {
         uint8_t ipage;
@@ -526,7 +940,6 @@ private:
             FlashErasePage((ipage * FLASH_PAGE_SIZE)+PARAM_START,FLASH_PASSWORD);
         }
         paramNextDefinitionAddress=PARAM_START;
-    
         paramCurrentPage = 0;
     }
 
@@ -534,6 +947,8 @@ private:
     uint32_t         paramError;                  // a variable used for debugging only
     MemoryAddress_t  paramNextDefinitionAddress;  // pointer to next available parameter address 
     uint32_t         paramCurrentPage;                    // the page that is currently being used.
+    std::function<void(uint8_t)> errorCallback_;
+    bool flashFailed_;
 
     static int32_t zero ;
 };
@@ -643,7 +1058,11 @@ extern "C" uint8_t QDN_ParamStatus(uint16_t index) {
 
 
 extern "C" void QDN_ParamInit(void){
-    paramDb.Init();
+    paramDb.Init([](uint8_t){});
+}
+
+void QDN_ParamInitWithCallback(std::function<void(uint8_t)> errorCallback){
+    paramDb.Init(errorCallback);
 }
 
 extern "C" void QDN_ParamEraseAll(void)
@@ -663,6 +1082,9 @@ extern "C" void QDN_ParamMemoryCopy(uint8_t* buffer, uint16_t start, uint16_t en
         memcpy(buffer, ((uint8_t*)parameter) + start, end - start);
     }
 }
+
+
+
 
 
 ////////////////////////////////////////////////////////////////////////////
