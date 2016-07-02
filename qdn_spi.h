@@ -58,6 +58,7 @@ public:
 	uint16_t WriteReadU16_BE(uint16_t word);
 
 	void EnableDMA(void);
+        void DisableDMA(void);
 
 private:
     friend QDN_DMA;

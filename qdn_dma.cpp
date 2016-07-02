@@ -174,6 +174,11 @@ void QDN_DMA::Enable()
     dmaChannel->CCR |= DMA_CCR1_EN;
 }
 
+void QDN_DMA::Disable()
+{
+    dmaChannel->CCR &= ~DMA_CCR1_EN;
+}
+
 void QDN_DMA::DisableAndRearm()
 {
     dmaChannel->CCR   &= ~DMA_CCR1_EN;

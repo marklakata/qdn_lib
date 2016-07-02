@@ -135,3 +135,8 @@ void QDN_SPI::EnableDMA(void)
 {
     SPI_I2S_DMACmd(spi, SPI_I2S_DMAReq_Rx | SPI_I2S_DMAReq_Tx, ENABLE);
 }
+
+void QDN_SPI::DisableDMA(void)
+{
+    SPI_I2S_DMACmd(spi, SPI_I2S_DMAReq_Rx | SPI_I2S_DMAReq_Tx, DISABLE);
+}
